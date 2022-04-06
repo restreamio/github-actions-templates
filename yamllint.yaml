@@ -1,0 +1,13 @@
+---
+extends: default
+
+rules:
+  comments-indentation: disable
+  truthy:
+    check-keys: false
+    level: warning
+  line-length:
+    max: 160
+    level: warning
+  indentation:
+    indent-sequences: whatever

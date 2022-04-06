@@ -1,0 +1,26 @@
+---
+name: Build Docker Image
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/build-docker-image.yaml"
+      - "tests/build-docker-image/**"
+
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/build-docker-image.yaml"
+      - "tests/build-docker-image/**"
+
+jobs:
+  build:
+    name: Tests
+    uses: ./.github/workflows/build-docker-image.yaml
+    with:
+      docker-context: "./tests/build-docker-image"
+      docker-file: "./tests/build-docker-image/Dockerfile"
+      

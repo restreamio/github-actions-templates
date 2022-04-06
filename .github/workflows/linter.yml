@@ -1,0 +1,17 @@
+---
+name: "Yaml linter"
+
+on: push
+
+jobs:
+  linter:
+    name: "Linter"
+    runs-on: [self-hosted, xsmall, prod]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        timeout-minutes: 1
+
+      - name: Run yamllint
+        run: yamllint -c ./yamllint.yaml -f standard ./.github/workflows/
+        timeout-minutes: 1
