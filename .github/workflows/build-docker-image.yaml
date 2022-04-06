@@ -1,0 +1,109 @@
+---
+name: Build Docker Image
+on:
+  workflow_call:
+    inputs:
+      ecr-region:
+        type: string
+        default: "eu-central-1"
+      docker-context:
+        type: string
+        default: "./"
+      docker-file:
+        type: string
+        default: "./Dockerfile"
+      build-instance-type:
+        type: string
+        default: "xlarge"
+
+jobs:
+  build:
+    name: Build and upload docker image
+    runs-on: ["self-hosted", "${{ inputs.build-instance-type }}", "prod"]
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+        timeout-minutes: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        timeout-minutes: 1
+
+      - name: Get commit details
+        id: github-commit-details
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          echo "::set-output name=date::$(date +'%y.%m.%d%H%m')"
+          echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
+          echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
+        timeout-minutes: 1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        env:
+          AWS_REGION: ${{ inputs.ecr-region }}
+        timeout-minutes: 1
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag and push image
+        uses: docker/build-push-action@v2
+        timeout-minutes: 30
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ github.event.repository.name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ inputs.docker-context }}
+          file: ${{ inputs.docker-file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Tag latest for master branch
+        uses: docker/build-push-action@v2
+        if: github.ref == 'refs/heads/master'
+        timeout-minutes: 30
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ github.event.repository.name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ inputs.docker-context }}
+          file: ${{ inputs.docker-file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Print image tag in status check summary
+        uses: restreamio/github-status-action@v1.1.6
+        timeout-minutes: 1
+        env:
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+        with:
+          authToken: ${{ secrets.GITHUB_TOKEN }}
+          context: "${{ github.workflow }} / CI / Image tag"
+          description: "${{ env.IMAGE_TAG }}"
+          state: "success"
+          sha: ${{github.event.pull_request.head.sha || github.sha}}
