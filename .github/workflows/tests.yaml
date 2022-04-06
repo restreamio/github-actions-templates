@@ -23,4 +23,3 @@ jobs:
     with:
       docker-context: "./tests/build-docker-image"
       docker-file: "./tests/build-docker-image/Dockerfile"
-      

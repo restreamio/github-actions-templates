@@ -6,12 +6,15 @@ on: push
 jobs:
   linter:
     name: "Linter"
-    runs-on: [self-hosted, xsmall, prod]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         timeout-minutes: 1
 
       - name: Run yamllint
-        run: yamllint -c ./yamllint.yaml -f standard ./.github/workflows/
+        uses: ibiqlik/action-yamllint@v3
         timeout-minutes: 1
+        with:
+          file_or_dir: ./.github/workflows/*.yaml
+          config_file: .yamllint.yaml
