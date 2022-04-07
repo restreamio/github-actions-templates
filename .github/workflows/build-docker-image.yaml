@@ -6,6 +6,9 @@ on:
       ecr-region:
         type: string
         default: "eu-central-1"
+      ecr-reposiroty-name:
+        type: string
+        default: ${{ github.event.repository.name }}
       docker-context:
         type: string
         default: "./"
@@ -50,7 +53,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ github.event.repository.name }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr-reposiroty-name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
@@ -76,7 +79,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ github.event.repository.name }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr-reposiroty-name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
