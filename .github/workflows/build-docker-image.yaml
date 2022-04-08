@@ -15,6 +15,12 @@ on:
       docker-file:
         type: string
         default: "./Dockerfile"
+      docker-additional-labels:
+        type: string
+        default: ""
+      inputs.docker-additional-build-args:
+        type: string
+        default: ""
       build-instance-type:
         type: string
         default: "xlarge"
@@ -63,6 +69,7 @@ jobs:
           push: true
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker-additional-build-args }}
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
             app.version=${{ env.IMAGE_TAG }}
@@ -70,6 +77,7 @@ jobs:
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            ${{ inputs.docker-additional-labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -89,6 +97,7 @@ jobs:
           push: true
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker-additional-build-args }}
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
           labels: |
             app.version=${{ env.IMAGE_TAG }}
@@ -96,6 +105,7 @@ jobs:
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            ${{ inputs.docker-additional-labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
