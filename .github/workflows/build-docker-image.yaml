@@ -18,7 +18,7 @@ on:
       docker-additional-labels:
         type: string
         default: ""
-      inputs.docker-additional-build-args:
+      docker-additional-build-args:
         type: string
         default: ""
       build-instance-type:
