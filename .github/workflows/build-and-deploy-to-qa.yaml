@@ -82,7 +82,7 @@ jobs:
     runs-on: ["self-hosted", "${{ inputs.build-instance-type }}", "prod"]
     if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened'
     outputs:
-      IMAGE_TAG: ${{ steps.currdate.outputs.date }}-${{ steps.sha-short.outputs.sha_short }}
+      IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
