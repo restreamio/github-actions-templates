@@ -67,11 +67,11 @@ jobs:
           context: ${{ inputs.docker-context }}
           file: ${{ inputs.docker-file }}
           push: true
-          build-args: |
+          build-args: |-
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker-additional-build-args }}
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
-          labels: |
+          labels: |-
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
             git.branch=${{ steps.github-commit-details.outputs.branch }}
@@ -95,11 +95,11 @@ jobs:
           context: ${{ inputs.docker-context }}
           file: ${{ inputs.docker-file }}
           push: true
-          build-args: |
+          build-args: |-
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker-additional-build-args }}
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
-          labels: |
+          labels: |-
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
             git.branch=${{ steps.github-commit-details.outputs.branch }}
