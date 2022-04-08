@@ -186,7 +186,7 @@ jobs:
         run: >
           argocd app create ${{ inputs.argocd_qa_app_name }} --server ${{ inputs.argocd_server }}
           --repo https://github.com/${{ inputs.repo_name }} --path ${{ inputs.argocd_qa_project }}
-          --dest-server ${{ inputs.destination-server }} --sync-policy ${{ inputs.sync_policy }}
+          --dest-server ${{ inputs.destination_server }} --sync-policy ${{ inputs.sync_policy }}
           --project ${{ inputs.argocd_qa_project }} --dest-namespace ${{ inputs.destination_namespace }}
           --auth-token ${{ secrets.argocd_qa_auth_token }} --helm-set-string image.tag=${{ env.IMAGE_TAG }}
           --helm-set ingress.enabled=true --helm-set-string ingress.host=${{ inputs.argocd_qa_fqdn }}
