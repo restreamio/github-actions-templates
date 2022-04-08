@@ -77,6 +77,8 @@ jobs:
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
             ${{ inputs.docker-additional-labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -105,6 +107,8 @@ jobs:
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
             ${{ inputs.docker-additional-labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
