@@ -29,7 +29,7 @@ on:
         type: string
         default: "16"
         required: false
-      yarn-lock-file:
+      cache-lock-file:
         type: string
         default: "**/yarn.lock"
         required: false
