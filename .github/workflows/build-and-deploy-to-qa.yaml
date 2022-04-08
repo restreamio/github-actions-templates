@@ -28,28 +28,28 @@ on:
         type: string
         default: "automated"
         required: false
-      argocd_qa_app_name:
+      argocd_app_name:
         type: string
         required: true
-      argocd_qa_fqdn:
+      argocd_app_fqdn:
         type: string
         required: true
-      argocd_qa_chart:
+      helm_chart:
         type: string
         required: true
-      argocd_qa_project:
+      argocd_project:
         type: string
         required: true
       argocd_server:
         type: string
         required: true
-      repo_name:
+      helm_repos:
         type: string
         required: true
-      destination_server:
+      kubernetes_url:
         type: string
         required: true
-      destination_namespace:
+      kubernetes_namespace:
         type: string
         required: true
       argocd_additional_options:
@@ -75,7 +75,7 @@ jobs:
         uses: restreamio/github-action-commit-comment@latest
         with:
           body: |
-            Build will be available here: [https://${{ inputs.argocd_qa_fqdn }}](https://${{ inputs.argocd_qa_fqdn }})
+            Build will be available here: [https://${{ inputs.argocd_app_fqdn }}](https://${{ inputs.argocd_app_fqdn }})
 
   build:
     name: Build and upload docker image
@@ -173,8 +173,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ needs.build.outputs.IMAGE_TAG }}
         run: >
-          argocd app set ${{ inputs.argocd_qa_app_name }} --server ${{ inputs.argocd_server }}
-          --project ${{ inputs.argocd_qa_project }} --auth-token ${{ secrets.argocd_qa_auth_token }}
+          argocd app set ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
+          --project ${{ inputs.argocd_project }} --auth-token ${{ secrets.argocd_qa_auth_token }}
           --helm-set-string image.tag=${{ env.IMAGE_TAG }} --grpc-web
 
       - name: Create application in argocd
@@ -184,12 +184,12 @@ jobs:
         env:
           IMAGE_TAG: ${{ needs.build.outputs.IMAGE_TAG }}
         run: >
-          argocd app create ${{ inputs.argocd_qa_app_name }} --server ${{ inputs.argocd_server }}
-          --repo https://github.com/${{ inputs.repo_name }} --path ${{ inputs.argocd_qa_project }}
-          --dest-server ${{ inputs.destination_server }} --sync-policy ${{ inputs.sync_policy }}
-          --project ${{ inputs.argocd_qa_project }} --dest-namespace ${{ inputs.destination_namespace }}
+          argocd app create ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
+          --repo https://github.com/${{ inputs.helm_repos }} --path ${{ inputs.helm_chart }}
+          --dest-server ${{ inputs.kubernetes_url }} --sync-policy ${{ inputs.sync_policy }}
+          --project ${{ inputs.argocd_project }} --dest-namespace ${{ inputs.kubernetes_namespace }}
           --auth-token ${{ secrets.argocd_qa_auth_token }} --helm-set-string image.tag=${{ env.IMAGE_TAG }}
-          --helm-set ingress.enabled=true --helm-set-string ingress.host=${{ inputs.argocd_qa_fqdn }}
+          --helm-set ingress.enabled=true --helm-set-string ingress.host=${{ inputs.argocd_app_fqdn }}
           --self-heal --auto-prune --grpc-web ${{ inputs.argocd_additional_options }}
 
       - name: Wait for the application to be ready
@@ -197,7 +197,7 @@ jobs:
         if: steps.argocd-create.outcome == 'success' || steps.argocd-update.outcome == 'success'
         timeout-minutes: 5
         run: >
-          argocd app wait ${{ inputs.argocd_qa_app_name }} --server ${{ inputs.argocd_server }}
+          argocd app wait ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
           --auth-token ${{ secrets.argocd_qa_auth_token }} --grpc-web
 
   argocd-delete:
@@ -209,5 +209,5 @@ jobs:
         continue-on-error: true
         timeout-minutes: 1
         run: >
-          argocd app delete ${{ inputs.argocd_qa_app_name }} --server ${{ inputs.argocd_server }}
+          argocd app delete ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
           --auth-token ${{ secrets.argocd_qa_auth_token }} -y --grpc-web
