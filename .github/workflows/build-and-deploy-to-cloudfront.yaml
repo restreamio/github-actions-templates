@@ -78,7 +78,7 @@ jobs:
         timeout-minutes: 10
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ github.event.repository.name }}-yarn-${{ hashFiles( inputs.yarn-lock-file ) }}
+          key: ${{ github.event.repository.name }}-yarn-${{ hashFiles( inputs.cache-lock-file ) }}
           restore-keys: |
             ${{ github.event.repository.name }}-yarn-
 
