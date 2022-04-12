@@ -108,7 +108,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' }}
         uses: restreamio/github-action-commit-comment@latest
         env:
-          IMAGE_TAG: ${{ steps.github-details.outputs.date }}-${{ steps.github-details.outputs.sha_short }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           SERVICE: ${{ github.event.repository.name }}
         with:
           body: |
