@@ -2,38 +2,22 @@ name: Build and Deploy to Cloudfront
 on:
   workflow_call:
     inputs:
-      ecr-region:
-        type: string
-        default: "eu-central-1"
-        required: false
-      ecr-reposiroty-name:
-        type: string
-        default: ${{ github.event.repository.name }}
-        required: false
-      docker-context:
-        type: string
-        default: "./"
-        required: false
-      docker-file:
-        type: string
-        default: "./Dockerfile"
-        required: false
-      build-instance-type:
+      build_instance_type:
         type: string
         default: "xlarge"
         required: false
-      s3-bucket-name:
+      s3_bucket_name:
         type: string
         required: true
-      node-version:
+      node_version:
         type: string
         default: "16"
         required: false
-      cache-lock-file:
+      cache_lock_file:
         type: string
         default: "**/yarn.lock"
         required: false
-      release-dir:
+      release_dir:
         type: string
         default: "./dist"
         required: false
@@ -41,7 +25,7 @@ on:
 jobs:
   build:
     name: Build and upload to cloudfront
-    runs-on: ["self-hosted", "${{ inputs.build-instance-type }}", "prod"]
+    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -51,7 +35,7 @@ jobs:
         uses: actions/setup-node@v2
         timeout-minutes: 5
         with:
-          node-version: ${{ inputs.node-version}}
+          node_version: ${{ inputs.node_version}}
 
       - name: Setup yarn
         run: npm install -g yarn
@@ -78,7 +62,7 @@ jobs:
         timeout-minutes: 10
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ github.event.repository.name }}-yarn-${{ hashFiles( inputs.cache-lock-file ) }}
+          key: ${{ github.event.repository.name }}-yarn-${{ hashFiles( inputs.cache_lock_file ) }}
           restore-keys: |
             ${{ github.event.repository.name }}-yarn-
 
@@ -96,14 +80,14 @@ jobs:
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 15
         run: |
-          cd ${{ inputs.release-dir }}
-          aws s3 cp . "s3://${{ inputs.s3-bucket-name }}" --recursive --no-progress
+          cd ${{ inputs.release_dir }}
+          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
 
       - name: Invalidation Cloudfront cache
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 5
         env:
-          ORIGIN: ${{ inputs.s3-bucket-name }}.s3.amazonaws.com
+          ORIGIN: ${{ inputs.s3_bucket_name }}.s3.amazonaws.com
         run: |
           export DISTRIBUTIONS=$(aws cloudfront list-distributions \
             --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?origin=='${{ env.ORIGIN }}'].id" \

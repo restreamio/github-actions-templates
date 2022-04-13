@@ -4,23 +4,23 @@ name: Build and Deploy to QA
 on:
   workflow_call:
     inputs:
-      ecr-region:
+      ecr_region:
         type: string
         default: "eu-central-1"
         required: false
-      ecr-reposiroty-name:
+      ecr_reposiroty_name:
         type: string
         default: ${{ github.event.repository.name }}
         required: false
-      docker-context:
+      docker_context:
         type: string
         default: "./"
         required: false
-      docker-file:
+      docker_file:
         type: string
         default: "./Dockerfile"
         required: false
-      build-instance-type:
+      build_instance_type:
         type: string
         default: "xlarge"
         required: false
@@ -79,7 +79,7 @@ jobs:
 
   build:
     name: Build and upload docker image
-    runs-on: ["self-hosted", "${{ inputs.build-instance-type }}", "prod"]
+    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
     if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened'
     outputs:
       IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
@@ -104,7 +104,7 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         env:
-          AWS_REGION: ${{ inputs.ecr-region }}
+          AWS_REGION: ${{ inputs.ecr_region }}
         timeout-minutes: 1
         uses: aws-actions/amazon-ecr-login@v1
 
@@ -113,13 +113,13 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ inputs.ecr-reposiroty-name }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
-          context: ${{ inputs.docker-context }}
-          file: ${{ inputs.docker-file }}
+          context: ${{ inputs.docker_context }}
+          file: ${{ inputs.docker_file }}
           push: true
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
@@ -139,13 +139,13 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ inputs.ecr-reposiroty-name }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
-          context: ${{ inputs.docker-context }}
-          file: ${{ inputs.docker-file }}
+          context: ${{ inputs.docker_context }}
+          file: ${{ inputs.docker_file }}
           push: true
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
