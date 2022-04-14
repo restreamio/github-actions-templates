@@ -35,7 +35,7 @@ jobs:
         uses: actions/setup-node@v2
         timeout-minutes: 5
         with:
-          node_version: ${{ inputs.node_version}}
+          node-version: ${{ inputs.node_version}}
 
       - name: Setup yarn
         run: npm install -g yarn
