@@ -1,0 +1,98 @@
+name: Build and Deploy to Cloudfront
+on:
+  workflow_call:
+    inputs:
+      build_instance_type:
+        type: string
+        default: "xlarge"
+        required: false
+      s3_bucket_name:
+        type: string
+        required: true
+      node_version:
+        type: string
+        default: "16"
+        required: false
+      cache_lock_file:
+        type: string
+        default: "**/yarn.lock"
+        required: false
+      release_dir:
+        type: string
+        default: "./dist"
+        required: false
+
+jobs:
+  build:
+    name: Build and upload to cloudfront
+    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+        timeout-minutes: 1
+
+      - name: Setup NodeJs and npm
+        uses: actions/setup-node@v2
+        timeout-minutes: 5
+        with:
+          node-version: ${{ inputs.node_version}}
+
+      - name: Setup yarn
+        run: npm install -g yarn
+        timeout-minutes: 5
+
+      - name: Get commit details
+        id: github-commit-details
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          echo "::set-output name=date::$(date +'%y.%m.%d%H%m')"
+          echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
+          echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
+          echo "::set-output name=commit_hash::$(git rev-parse HEAD)"
+        timeout-minutes: 1
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+        timeout-minutes: 1
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v2
+        id: yarn-cache
+        timeout-minutes: 10
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ github.event.repository.name }}-yarn-${{ hashFiles( inputs.cache_lock_file ) }}
+          restore-keys: |
+            ${{ github.event.repository.name }}-yarn-
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        timeout-minutes: 10
+
+      - name: Build source code
+        run: yarn build
+        timeout-minutes: 15
+        env:
+          COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
+
+      - name: Deploy CloudFront
+        if: github.ref == 'refs/heads/master'
+        timeout-minutes: 15
+        run: |
+          cd ${{ inputs.release_dir }}
+          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
+
+      - name: Invalidation Cloudfront cache
+        if: github.ref == 'refs/heads/master'
+        timeout-minutes: 5
+        env:
+          ORIGIN: ${{ inputs.s3_bucket_name }}.s3.amazonaws.com
+        run: |
+          export DISTRIBUTIONS=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?origin=='${{ env.ORIGIN }}'].id" \
+            --output text \
+          )
+          for id in $DISTRIBUTIONS; do
+            aws cloudfront create-invalidation --distribution-id $id --paths "/*"
+          done

@@ -1,0 +1,213 @@
+---
+name: Build and Deploy to QA
+
+on:
+  workflow_call:
+    inputs:
+      ecr_region:
+        type: string
+        default: "eu-central-1"
+        required: false
+      ecr_reposiroty_name:
+        type: string
+        default: ${{ github.event.repository.name }}
+        required: false
+      docker_context:
+        type: string
+        default: "./"
+        required: false
+      docker_file:
+        type: string
+        default: "./Dockerfile"
+        required: false
+      build_instance_type:
+        type: string
+        default: "xlarge"
+        required: false
+      sync_policy:
+        type: string
+        default: "automated"
+        required: false
+      argocd_app_name:
+        type: string
+        required: true
+      argocd_app_fqdn:
+        type: string
+        required: true
+      helm_chart:
+        type: string
+        required: true
+      argocd_project:
+        type: string
+        required: true
+      argocd_server:
+        type: string
+        required: true
+      helm_repos:
+        type: string
+        required: true
+      kubernetes_url:
+        type: string
+        required: true
+      kubernetes_namespace:
+        type: string
+        required: true
+      argocd_additional_options:
+        type: string
+        default: ""
+        required: false
+    secrets:
+      argocd_qa_auth_token:
+        required: true
+
+concurrency:
+  group: ${{ github.event.repository.name }}-qa-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  print-url:
+    name: Print the url of QA build
+    runs-on: ["self-hosted", "xsmall", "prod"]
+    if: github.event.action == 'opened'
+    timeout-minutes: 1
+    steps:
+      - name: Leave comment with domain name
+        uses: restreamio/github-action-commit-comment@latest
+        with:
+          body: |
+            Build will be available here: [https://${{ inputs.argocd_app_fqdn }}](https://${{ inputs.argocd_app_fqdn }})
+
+  build:
+    name: Build and upload docker image
+    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
+    if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened'
+    outputs:
+      IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+        timeout-minutes: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        timeout-minutes: 1
+
+      - name: Get commit details
+        id: github-commit-details
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          echo "::set-output name=date::$(date +'%y.%m.%d%H%m')"
+          echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
+          echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
+        timeout-minutes: 1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        env:
+          AWS_REGION: ${{ inputs.ecr_region }}
+        timeout-minutes: 1
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag and push image
+        uses: docker/build-push-action@v2
+        timeout-minutes: 30
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ inputs.docker_context }}
+          file: ${{ inputs.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Tag latest for master branch
+        uses: docker/build-push-action@v2
+        if: github.ref == 'refs/heads/master'
+        timeout-minutes: 30
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ inputs.docker_context }}
+          file: ${{ inputs.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  argocd-create:
+    name: Update application in ArgoCD
+    needs:
+      - build
+    runs-on: ["self-hosted", "xsmall", "prod"]
+    steps:
+      - name: Update application in argocd
+        id: argocd-update
+        if: github.event.action != 'closed'
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          IMAGE_TAG: ${{ needs.build.outputs.IMAGE_TAG }}
+        run: >
+          argocd app set ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
+          --project ${{ inputs.argocd_project }} --auth-token ${{ secrets.argocd_qa_auth_token }}
+          --helm-set-string image.tag=${{ env.IMAGE_TAG }} --grpc-web
+
+      - name: Create application in argocd
+        id: argocd-create
+        if: steps.argocd-update.outcome == 'failure'
+        timeout-minutes: 1
+        env:
+          IMAGE_TAG: ${{ needs.build.outputs.IMAGE_TAG }}
+        run: >
+          argocd app create ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
+          --repo https://github.com/${{ inputs.helm_repos }} --path ${{ inputs.helm_chart }}
+          --dest-server ${{ inputs.kubernetes_url }} --sync-policy ${{ inputs.sync_policy }}
+          --project ${{ inputs.argocd_project }} --dest-namespace ${{ inputs.kubernetes_namespace }}
+          --auth-token ${{ secrets.argocd_qa_auth_token }} --helm-set-string image.tag=${{ env.IMAGE_TAG }}
+          --helm-set ingress.enabled=true --helm-set-string ingress.host=${{ inputs.argocd_app_fqdn }}
+          --self-heal --auto-prune --grpc-web ${{ inputs.argocd_additional_options }}
+
+      - name: Wait for the application to be ready
+        id: argocd-wait
+        if: steps.argocd-create.outcome == 'success' || steps.argocd-update.outcome == 'success'
+        timeout-minutes: 5
+        run: >
+          argocd app wait ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
+          --auth-token ${{ secrets.argocd_qa_auth_token }} --grpc-web
+
+  argocd-delete:
+    name: Delete application in ArgoCD
+    runs-on: ["self-hosted", "xsmall", "prod"]
+    if: github.event.action == 'closed'
+    steps:
+      - name: Delete application in argocd
+        continue-on-error: true
+        timeout-minutes: 1
+        run: >
+          argocd app delete ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
+          --auth-token ${{ secrets.argocd_qa_auth_token }} -y --grpc-web
