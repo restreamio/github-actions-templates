@@ -19,6 +19,14 @@ on:
         type: string
         default: "./Dockerfile"
         required: false
+      docker_additional_labels:
+        type: string
+        default: ""
+        required: false
+      docker_additional_build_args:
+        type: string
+        default: ""
+        required: false
       build_instance_type:
         type: string
         default: "xlarge"
@@ -66,15 +74,19 @@ jobs:
           context: ${{ inputs.docker_context }}
           file: ${{ inputs.docker_file }}
           push: true
-          build-args: |
+          build-args: |-
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_build_args }}
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
-          labels: |
+          labels: |-
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -92,15 +104,19 @@ jobs:
           context: ${{ inputs.docker_context }}
           file: ${{ inputs.docker_file }}
           push: true
-          build-args: |
+          build-args: |-
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_build_args }}
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
-          labels: |
+          labels: |-
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
