@@ -19,7 +19,7 @@ on:
         type: string
         default: "xlarge"
         required: false
-      image_details:
+      build_images:
         type: string
         required: true
       pr_open:
@@ -63,12 +63,12 @@ jobs:
         timeout-minutes: 1
 
   build:
-    name: Build ${{ matrix.image }} image
+    name: Build ${{ matrix.image }}
     runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
     needs: [prepare]
     strategy:
       matrix:
-        include: ${{ fromJSON(inputs.image_details) }}
+        include: ${{ fromJSON(inputs.build_images) }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
