@@ -36,7 +36,6 @@ on:
         required: false
     secrets:
       gh_token:
-        default: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
         required: true
 
 concurrency:
