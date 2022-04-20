@@ -35,7 +35,7 @@ on:
         default: ""
         required: false
     secrets:
-      github_token:
+      gh_token:
         required: true
 
 concurrency:
@@ -150,7 +150,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
           SERVICE: ${{ github.event.repository.name }}
-          GIT_TOKEN: ${{ secrets.github_token }}
+          GIT_TOKEN: ${{ secrets.gh_token }}
         run: |-
           git clone "https://$GIT_TOKEN@github.com/restreamio/${{ inputs.pr_repos }}.git"
           cd ${{ inputs.pr_repos }}
@@ -177,7 +177,7 @@ jobs:
           author: restream-ci-bot <restream-ci-bot@users.noreply.github.com>
           delete-branch: true
           path: ${{ inputs.pr_repos }}
-          token: ${{ secrets.github_token }}
+          token: ${{ secrets.gh_token }}
 
       - name: Leave comment with created image
         if: github.ref == 'refs/heads/master'
