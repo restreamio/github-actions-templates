@@ -142,7 +142,7 @@ jobs:
     runs-on: ["self-hosted", "xsmall", "prod"]
     steps:
       - name: Create git commits
-        if: github.ref == 'refs/heads/master' && inputs.pr_open
+        if: inputs.pr_open # github.ref == 'refs/heads/master' &&
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
@@ -155,7 +155,7 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
-        if: github.ref == 'refs/heads/master' && inputs.pr_open
+        if: inputs.pr_open # github.ref == 'refs/heads/master' &&
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
@@ -177,7 +177,7 @@ jobs:
           token: ${{ secrets.github-token }}
 
       - name: Leave comment with created image
-        if: ${{ github.ref == 'refs/heads/master' }}
+        if: github.ref == 'refs/heads/master'
         uses: restreamio/github-action-commit-comment@latest
         timeout-minutes: 1
         env:
