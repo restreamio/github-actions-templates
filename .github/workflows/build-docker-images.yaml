@@ -25,17 +25,18 @@ on:
       pr_open:
         type: boolean
         default: false
-        required: false
+        required: true
       pr_repos:
         type: string
-        default: ""
+        default: "k8s"
         required: false
       pr_command:
         type: string
-        default: ""
+        default: "yq e '(.spec.source.helm.parameters[] | select(.name == "image.tag")).value = env(IMAGE_TAG)' -i 'kustomize/argocd/apps/${{ github.event.repository.name }}.yaml'"
         required: false
     secrets:
       gh_token:
+        default: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
         required: true
 
 concurrency:
