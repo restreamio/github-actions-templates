@@ -15,10 +15,6 @@ on:
         type: string
         default: "./"
         required: false
-      docker_file:
-        type: string
-        default: "./Dockerfile"
-        required: false
       build_instance_type:
         type: string
         default: "xlarge"
