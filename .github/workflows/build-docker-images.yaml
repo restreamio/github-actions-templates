@@ -18,7 +18,7 @@ on:
       build_instance_type:
         type: string
         default: "xlarge"
-        required: false    
+        required: false
       image_details:
         type: string
         required: true
@@ -61,14 +61,14 @@ jobs:
           echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
           echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
         timeout-minutes: 1
-  
+
   build:
     name: Build ${{ matrix.image }} image
     runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
     needs: [prepare]
     strategy:
       matrix:
-       include: ${{ fromJSON(inputs.image_details) }}
+        include: ${{ fromJSON(inputs.image_details) }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
