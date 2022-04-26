@@ -9,7 +9,7 @@ on:
         required: false
       build_images:
         type: string
-        required: true
+        required: false
         default: |-
           [
              {
