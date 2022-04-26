@@ -7,10 +7,6 @@ on:
         type: string
         default: "eu-central-1"
         required: false
-      ecr_reposiroty_name:
-        type: string
-        default: ${{ github.event.repository.name }}
-        required: false
       build_images:
         type: string
         required: true
@@ -20,7 +16,8 @@ on:
                "container": "image",
                "docker_file": "./Dockerfile",
                "docker_context": "./",
-               "runner_type": "xlarge"
+               "runner_type": "xlarge",
+               "ecr_repository_name": "${{ github.event.repository.name }}"
              }
           ]
       pr_open:
@@ -60,15 +57,10 @@ jobs:
         uses: actions/checkout@v2
         timeout-minutes: 1
 
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-
-        run: echo "$GITHUB_CONTEXT"
       - name: Get commit details
         id: github-commit-details
         run: |
-          echo "::set-output name=date::$(date -d '${{ github.event.head_commit.timestamp }}' +'%y.%m.%d%H%M')"
+          echo "::set-output name=date::$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
           echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
           echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
@@ -90,7 +82,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}/${{ matrix.container }}
+          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
@@ -116,7 +108,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}/${{ matrix.container }}
+          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
