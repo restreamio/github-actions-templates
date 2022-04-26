@@ -11,21 +11,22 @@ on:
         type: string
         default: ${{ github.event.repository.name }}
         required: false
-      docker_context:
-        type: string
-        default: "./"
-        required: false
-      build_instance_type:
-        type: string
-        default: "xlarge"
-        required: false
       build_images:
         type: string
         required: true
+        default: |-
+        [
+           {
+             "container": "image",
+             "docker_file": "./Dockerfile",
+             "docker_context": "./",
+             "runner_type": "xlarge"
+           }
+        ]
       pr_open:
         type: boolean
-        default: false
-        required: true
+        default: true
+        required: false
       pr_repos:
         type: string
         default: "k8s"
@@ -43,14 +44,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  prepare:
-    name: Get commit details for multiple images
-    runs-on: ["self-hosted", "xsmall", "prod"]
+  build:
+    name: Build ${{ matrix.container }}
+    runs-on: ["self-hosted", "${{ matrix.runner_type }}", "prod"]
     outputs:
-      sha_short: ${{ steps.github-commit-details.outputs.sha_short }}
       date: ${{ steps.github-commit-details.outputs.date }}
+      sha_short: ${{ steps.github-commit-details.outputs.sha_short }}
       branch: ${{ steps.github-commit-details.outputs.branch }}
       contributor: ${{ steps.github-commit-details.outputs.contributor }}
+    strategy:
+      matrix:
+        include: ${{ fromJSON(inputs.build_images) }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -59,22 +63,10 @@ jobs:
       - name: Get commit details
         id: github-commit-details
         run: |
+          echo "::set-output name=date::$(date -d '${{ github.event.head_commit.timestamp }}' +'%y.%m.%d%H%M')"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=date::$(date +'%y.%m.%d%H%M')"
           echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
           echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
-        timeout-minutes: 1
-
-  build:
-    name: Build ${{ matrix.image }}
-    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
-    needs: [prepare]
-    strategy:
-      matrix:
-        include: ${{ fromJSON(inputs.build_images) }}
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v2
         timeout-minutes: 1
 
       - name: Set up Docker Buildx
@@ -93,12 +85,12 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}/${{ matrix.image }}
-          IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}/${{ matrix.container }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
-          context: ${{ inputs.docker_context }}
+          context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
           build-args: |
@@ -107,9 +99,9 @@ jobs:
           labels: |
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
-            git.branch=${{ needs.prepare.outputs.branch }}
-            git.commit=${{ needs.prepare.outputs.sha_short }}
-            git.contributor=${{ needs.prepare.outputs.contributor }}
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -119,12 +111,12 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}/${{ matrix.image }}
-          IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}/${{ matrix.container }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
-          context: ${{ inputs.docker_context }}
+          context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
           build-args: |
@@ -133,22 +125,22 @@ jobs:
           labels: |
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
-            git.branch=${{ needs.prepare.outputs.branch }}
-            git.commit=${{ needs.prepare.outputs.sha_short }}
-            git.contributor=${{ needs.prepare.outputs.contributor }}
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   results:
     name: Output build results
-    needs: [prepare, build]
+    needs: [build]
     runs-on: ["self-hosted", "xsmall", "prod"]
     steps:
       - name: Create git commits
         if: inputs.pr_open # github.ref == 'refs/heads/master' &&
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
           SERVICE: ${{ github.event.repository.name }}
           GIT_TOKEN: ${{ secrets.gh_token }}
         run: |-
@@ -161,7 +153,7 @@ jobs:
         if: inputs.pr_open # github.ref == 'refs/heads/master' &&
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
           SERVICE: ${{ github.event.repository.name }}
           AUTHOR_NAME: restream-ci-bot
         with:
@@ -184,7 +176,7 @@ jobs:
         uses: restreamio/github-action-commit-comment@latest
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
           SERVICE: ${{ github.event.repository.name }}
         with:
           body: |
@@ -194,7 +186,7 @@ jobs:
         uses: restreamio/github-status-action@v1.1.6
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ needs.prepare.outputs.date }}-${{ needs.prepare.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
         with:
           authToken: ${{ secrets.GITHUB_TOKEN }}
           context: "${{ github.workflow }} / CI / Image tag"
