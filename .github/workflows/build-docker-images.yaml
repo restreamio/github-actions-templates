@@ -15,14 +15,14 @@ on:
         type: string
         required: true
         default: |-
-        [
-           {
-             "container": "image",
-             "docker_file": "./Dockerfile",
-             "docker_context": "./",
-             "runner_type": "xlarge"
-           }
-        ]
+          [
+             {
+               "container": "image",
+               "docker_file": "./Dockerfile",
+               "docker_context": "./",
+               "runner_type": "xlarge"
+             }
+          ]
       pr_open:
         type: boolean
         default: true
@@ -33,7 +33,7 @@ on:
         required: false
       pr_command:
         type: string
-        default: "yq e '(.spec.source.helm.parameters[] | select(.name == \"image.tag\")).value = env(IMAGE_TAG)' -i 'kustomize/argocd/apps/${{ github.event.repository.name }}.yaml'"
+        default: 'yq e ''(.spec.source.helm.parameters[] | select(.name == "image.tag")).value = env(IMAGE_TAG)'' -i ''kustomize/argocd/apps/${{ github.event.repository.name }}.yaml'''
         required: false
     secrets:
       gh_token:
