@@ -134,11 +134,10 @@ jobs:
     runs-on: ["self-hosted", "xsmall", "prod"]
     steps:
       - name: Create git commits
-        if: inputs.pr_open # github.ref == 'refs/heads/master' &&
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
-          SERVICE: ${{ github.event.repository.name }}
           GIT_TOKEN: ${{ secrets.gh_token }}
         run: |-
           git clone "https://$GIT_TOKEN@github.com/restreamio/${{ inputs.pr_repos }}.git"
@@ -147,21 +146,20 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
-        if: inputs.pr_open # github.ref == 'refs/heads/master' &&
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
-          SERVICE: ${{ github.event.repository.name }}
           AUTHOR_NAME: restream-ci-bot
         with:
-          branch: "bump-${{ env.SERVICE }}"
-          title: "bump: ${{ env.SERVICE }}"
+          branch: "bump-${{ github.event.repository.name }}"
+          title: "bump: ${{ github.event.repository.name }}"
           body: |-
             author: [${{ github.event.head_commit.author.name }}](https://github.com/${{ github.event.head_commit.author.username }})
             repos: [${{ github.event.repository.full_name }}](${{ github.event.repository.html_url }})
             commit: [link](${{ github.event.head_commit.url }})
             message: ${{ github.event.head_commit.message }}
-          commit-message: "bump: ${{ env.SERVICE }} to ${{ env.IMAGE_TAG }}"
+          commit-message: "bump: ${{ github.event.repository.name }} to ${{ env.IMAGE_TAG }}"
           committer: GitHub <noreply@github.com>
           author: restream-ci-bot <restream-ci-bot@users.noreply.github.com>
           delete-branch: true
@@ -174,7 +172,6 @@ jobs:
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
-          SERVICE: ${{ github.event.repository.name }}
         with:
           body: |
             Image has been built: `${{ env.IMAGE_TAG }}`
