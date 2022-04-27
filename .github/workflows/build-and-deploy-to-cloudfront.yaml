@@ -45,7 +45,7 @@ jobs:
         id: github-commit-details
         run: |
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=date::$(date +'%y.%m.%d%H%m')"
+          echo "::set-output name=date::$(date +'%y.%m.%d%H%M')"
           echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
           echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
           echo "::set-output name=commit_hash::$(git rev-parse HEAD)"
