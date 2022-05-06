@@ -82,6 +82,7 @@ jobs:
         run: |
           cd ${{ inputs.release_dir }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
+          aws s3 cp "s3://${{ inputs.s3_bucket_name }}/index.html" "s3://${{ inputs.s3_bucket_name }}/index.html" --cache-control "no-cache, no-store"
 
       - name: Invalidation Cloudfront cache
         if: github.ref == 'refs/heads/master'
