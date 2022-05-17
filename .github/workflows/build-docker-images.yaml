@@ -24,6 +24,10 @@ on:
         type: boolean
         default: true
         required: false
+      docker_additional_labels:
+        type: string
+        default: ""
+        required: false
       pr_repos:
         type: string
         default: "k8s"
@@ -99,6 +103,10 @@ jobs:
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
+          cache-from: type=gha
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -125,6 +133,10 @@ jobs:
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
+          cache-from: type=gha
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
