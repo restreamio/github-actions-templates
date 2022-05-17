@@ -8,7 +8,7 @@ on:
         type: string
         default: "eu-central-1"
         required: false
-      ecr_reposiroty_name:
+      ecr_repository_name:
         type: string
         default: ${{ github.event.repository.name }}
         required: false
@@ -113,7 +113,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
@@ -139,7 +139,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ inputs.ecr_reposiroty_name }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
