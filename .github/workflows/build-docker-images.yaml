@@ -107,7 +107,6 @@ jobs:
             com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_labels }}
           cache-from: type=gha
-          cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Tag latest for master branch
@@ -136,7 +135,6 @@ jobs:
             com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
             com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_labels }}
-          cache-from: type=gha
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
