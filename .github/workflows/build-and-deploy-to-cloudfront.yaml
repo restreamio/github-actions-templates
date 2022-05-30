@@ -21,6 +21,9 @@ on:
         type: string
         default: "./dist"
         required: false
+      s3_deploy_command:
+        type: string
+        required: false
 
 jobs:
   build:
@@ -82,6 +85,7 @@ jobs:
         run: |
           cd ${{ inputs.release_dir }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
+          ${{ inputs.s3_deploy_command }}
 
       - name: Invalidation Cloudfront cache
         if: github.ref == 'refs/heads/master'
