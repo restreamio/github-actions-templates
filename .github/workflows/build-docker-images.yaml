@@ -28,6 +28,10 @@ on:
         type: string
         default: ""
         required: false
+      docker_additional_args:
+        type: string
+        default: ""
+        required: false
       pr_repos:
         type: string
         default: "k8s"
@@ -96,6 +100,7 @@ jobs:
           push: true
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_args }}
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
             app.version=${{ env.IMAGE_TAG }}
@@ -125,6 +130,7 @@ jobs:
           push: true
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_args }}
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
           labels: |
             app.version=${{ env.IMAGE_TAG }}
