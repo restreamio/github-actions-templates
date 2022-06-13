@@ -111,8 +111,6 @@ jobs:
             com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
             com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Tag latest for master branch
         uses: docker/build-push-action@v3
@@ -141,8 +139,6 @@ jobs:
             com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
             com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   results:
     name: Output build results

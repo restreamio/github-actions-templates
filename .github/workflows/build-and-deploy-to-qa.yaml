@@ -130,8 +130,6 @@ jobs:
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Tag latest for master branch
         uses: docker/build-push-action@v3
@@ -156,8 +154,6 @@ jobs:
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   argocd-create:
     name: Update application in ArgoCD
