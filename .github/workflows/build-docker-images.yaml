@@ -5,6 +5,10 @@ on:
     inputs:
       ecr_region:
         type: string
+        default: "us-east-1"
+        required: false
+      ecr_region_eu:
+        type: string
         default: "eu-central-1"
         required: false
       build_images:
@@ -78,10 +82,17 @@ jobs:
         uses: docker/setup-buildx-action@v2
         timeout-minutes: 1
 
-      - name: Login to Amazon ECR
+      - name: Login to Amazon US ECR
         id: login-ecr
         env:
           AWS_REGION: ${{ inputs.ecr_region }}
+        timeout-minutes: 1
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Login to Amazon EU ECR
+        id: login-ecr-eu
+        env:
+          AWS_REGION: ${{ inputs.ecr_region_eu }}
         timeout-minutes: 1
         uses: aws-actions/amazon-ecr-login@v1
 
@@ -90,6 +101,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REGISTRY_EU: ${{ steps.login-ecr-eu.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
@@ -101,7 +113,9 @@ jobs:
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_args }}
-          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.ECR_REGISTRY_EU }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
@@ -120,6 +134,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REGISTRY_EU: ${{ steps.login-ecr-eu.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
@@ -131,7 +146,9 @@ jobs:
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_args }}
-          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
+            ${{ env.ECR_REGISTRY_EU }}/${{ env.ECR_REPOSITORY_NAME }}:latest
           labels: |
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
