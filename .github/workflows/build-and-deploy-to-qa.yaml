@@ -124,7 +124,6 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REGISTRY_EU: ${{ steps.login-ecr-eu.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ inputs.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
@@ -137,7 +136,6 @@ jobs:
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
-            ${{ env.ECR_REGISTRY_EU }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
@@ -153,7 +151,6 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REGISTRY_EU: ${{ steps.login-ecr-eu.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ inputs.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
@@ -166,7 +163,61 @@ jobs:
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
-            ${{ env.ECR_REGISTRY_EU }}/${{ env.ECR_REPOSITORY_NAME }}:latest
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build, tag and push image in EU
+        uses: docker/build-push-action@v3
+        timeout-minutes: 30
+        continue-on-error: true
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_repository_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ inputs.docker_context }}
+          file: ${{ inputs.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Tag latest for master branch in EU
+        uses: docker/build-push-action@v3
+        if: github.ref == 'refs/heads/master'
+        timeout-minutes: 30
+        continue-on-error: true
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ inputs.ecr_repository_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ inputs.docker_context }}
+          file: ${{ inputs.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
           labels: |
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service

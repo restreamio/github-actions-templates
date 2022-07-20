@@ -96,12 +96,11 @@ jobs:
         timeout-minutes: 1
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag and push image
+      - name: Build, tag and push image to US
         uses: docker/build-push-action@v3
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REGISTRY_EU: ${{ steps.login-ecr-eu.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
@@ -115,7 +114,6 @@ jobs:
             ${{ inputs.docker_additional_args }}
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
-            ${{ env.ECR_REGISTRY_EU }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
@@ -128,13 +126,43 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Tag latest for master branch
+      - name: Build, tag and push image to EU
+        uses: docker/build-push-action@v3
+        timeout-minutes: 30
+        continue-on-error: true
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ matrix.docker_context }}
+          file: ${{ matrix.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_args }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Tag latest for master branch in US
         uses: docker/build-push-action@v3
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REGISTRY_EU: ${{ steps.login-ecr-eu.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
@@ -148,7 +176,6 @@ jobs:
             ${{ inputs.docker_additional_args }}
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
-            ${{ env.ECR_REGISTRY_EU }}/${{ env.ECR_REPOSITORY_NAME }}:latest
           labels: |
             app.version=${{ env.IMAGE_TAG }}
             description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
@@ -161,13 +188,67 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  results:
-    name: Output build results
+      - name: Tag latest for master branch in EU
+        uses: docker/build-push-action@v3
+        if: github.ref == 'refs/heads/master'
+        timeout-minutes: 30
+        continue-on-error: true
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ matrix.docker_context }}
+          file: ${{ matrix.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_args }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Leave comment with created image
+        if: github.ref == 'refs/heads/master'
+        uses: restreamio/github-action-commit-comment@latest
+        timeout-minutes: 1
+        env:
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+        with:
+          body: |
+            Image has been built: `${{ env.IMAGE_TAG }}`
+
+      - name: Print image tag in status check summary
+        uses: restreamio/github-status-action@v1.1.6
+        timeout-minutes: 1
+        env:
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+        with:
+          authToken: ${{ secrets.GITHUB_TOKEN }}
+          context: "${{ github.workflow }} / CI / Image tag"
+          description: "${{ env.IMAGE_TAG }}"
+          state: "success"
+          sha: ${{github.event.pull_request.head.sha || github.sha}}
+
+  pr:
+    name: Open pull request
     needs: [build]
     runs-on: ["self-hosted", "xsmall", "prod"]
+    if: github.ref == 'refs/heads/master' && inputs.pr_open
     steps:
       - name: Create git commits
-        if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
@@ -179,7 +260,6 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
-        if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
@@ -198,25 +278,3 @@ jobs:
           delete-branch: true
           path: ${{ inputs.pr_repos }}
           token: ${{ secrets.gh_token }}
-
-      - name: Leave comment with created image
-        if: github.ref == 'refs/heads/master'
-        uses: restreamio/github-action-commit-comment@latest
-        timeout-minutes: 1
-        env:
-          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
-        with:
-          body: |
-            Image has been built: `${{ env.IMAGE_TAG }}`
-
-      - name: Print image tag in status check summary
-        uses: restreamio/github-status-action@v1.1.6
-        timeout-minutes: 1
-        env:
-          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
-        with:
-          authToken: ${{ secrets.GITHUB_TOKEN }}
-          context: "${{ github.workflow }} / CI / Image tag"
-          description: "${{ env.IMAGE_TAG }}"
-          state: "success"
-          sha: ${{github.event.pull_request.head.sha || github.sha}}
