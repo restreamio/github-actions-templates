@@ -220,12 +220,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  pr:
+    name: Open pull request
+    needs: [build]
+    runs-on: ["self-hosted", "xsmall", "prod"]
+    steps:
       - name: Leave comment with created image
         if: github.ref == 'refs/heads/master'
         uses: restreamio/github-action-commit-comment@latest
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
         with:
           body: |
             Image has been built: `${{ env.IMAGE_TAG }}`
@@ -234,7 +239,7 @@ jobs:
         uses: restreamio/github-status-action@v1.1.6
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
         with:
           authToken: ${{ secrets.GITHUB_TOKEN }}
           context: "${{ github.workflow }} / CI / Image tag"
@@ -242,13 +247,8 @@ jobs:
           state: "success"
           sha: ${{github.event.pull_request.head.sha || github.sha}}
 
-  pr:
-    name: Open pull request
-    needs: [build]
-    runs-on: ["self-hosted", "xsmall", "prod"]
-    if: github.ref == 'refs/heads/master' && inputs.pr_open
-    steps:
       - name: Create git commits
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
@@ -260,6 +260,7 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
