@@ -70,7 +70,7 @@ jobs:
         timeout-minutes: 1
 
       - name: Dump context
-        run: echo "${{ github }}"
+        run: echo "${{ toJSON(github) }}"
 
       - name: Get commit details
         id: github-commit-details
