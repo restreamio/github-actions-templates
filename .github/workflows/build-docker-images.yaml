@@ -274,9 +274,9 @@ jobs:
           branch: "bump-${{ github.event.repository.name }}"
   # fix v
           title: "bump: ${{ github.event.repository.name }}"
+  # fix repos
           body: |-
             author: [${{ github.event.head_commit.author.name }}](https://github.com/${{ github.event.head_commit.author.username }})
-  # fix v
             repos: [${{ github.event.repository.full_name }}](${{ github.event.repository.html_url }})
             commit: [link](${{ github.event.head_commit.url }})
             message: ${{ github.event.head_commit.message }}
