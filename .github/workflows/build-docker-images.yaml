@@ -72,15 +72,18 @@ jobs:
       # - name: Dump context
       #   run: echo "${{ toJSON(github) }}"
 
-      - name: test-GitHub repo name split
-        run: 'echo "${{ github.repository }}" | sed "s|.*/||" '
-
       - name: Get commit details
         id: github-commit-details
   # fix date for current if scheduler
   # fix if branch master - tag imagetag+latest, if scheduler - imagetag
         run: |
-          echo "::set-output name=commit_repo_split::$(echo ${{ github.repository }} | sed 's|.*/||')"
+          if:
+            - ${{ matrix.ecr_repository_name }} == ""
+          then:
+            echo "::set-env name=ECR_REPOSITORY_NAME::$(echo ${{ github.repository }} | sed 's|.*/||')"
+          else:
+            echo "::set-env name=ECR_REPOSITORY_NAME::${{ matrix.ecr_repository_name }}"
+          fi
           echo "::set-output name=date::$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
           echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
@@ -123,10 +126,10 @@ jobs:
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_args }}
           tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}${{env.COMMIT_REPO}}:${{ env.IMAGE_TAG }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
             app.version=${{ env.IMAGE_TAG }}
-            description=Restream ${{ env.ECR_REPOSITORY_NAME }}${{env.COMMIT_REPO}} service
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
             git.branch=${{ steps.github-commit-details.outputs.branch }}
             git.commit=${{ steps.github-commit-details.outputs.sha_short }}
             git.contributor=${{ steps.github-commit-details.outputs.contributor }}
