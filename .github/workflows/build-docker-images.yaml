@@ -79,9 +79,9 @@ jobs:
         run: |
           if [[ -v ${{ matrix.ecr_repository_name }} ]]
           then
-            echo "::set-output name=repo_name_fix::$(echo ${{ github.repository }} | sed 's|.*/||')"
+            echo "::set-output name=repo_name_fix::${{ matrix.ecr_repository_name }}.git"
           else
-            echo "::set-output name=repo_name_fix::${{ matrix.ecr_repository_name }}"
+            echo "::set-output name=repo_name_fix::$(echo ${{ github.repository }} | sed 's|.*/||')"
           fi
           echo "::set-output name=date::$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
