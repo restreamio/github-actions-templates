@@ -80,7 +80,7 @@ jobs:
   # fix date for current if scheduler
   # fix if branch master - tag imagetag+latest, if scheduler - imagetag
         run: |
-          echo "::set-env name=COMMIT_REPO::echo '${{ github.repository }}' | sed 's|.*/||'"
+          echo "::set-output name=commit_repo_split::echo '${{ github.repository }}' | sed 's|.*/||'"
           echo "::set-output name=date::$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
           echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
@@ -114,6 +114,7 @@ jobs:
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
+          COMMIT_REPO: ${{ steps.github-commit-details.outputs.commit_repo_split }}
         with:
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
