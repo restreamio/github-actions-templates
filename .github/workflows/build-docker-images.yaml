@@ -144,7 +144,7 @@ jobs:
         continue-on-error: true
         env:
           ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          ECR_REPOSITORY_NAME: ${{ steps.github-commit-details.outputs.repo_name_fix }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
@@ -175,7 +175,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          ECR_REPOSITORY_NAME: ${{ steps.github-commit-details.outputs.repo_name_fix }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
@@ -207,7 +207,7 @@ jobs:
         continue-on-error: true
         env:
           ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          ECR_REPOSITORY_NAME: ${{ steps.github-commit-details.outputs.repo_name_fix }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
