@@ -69,21 +69,18 @@ jobs:
         uses: actions/checkout@v2
         timeout-minutes: 1
 
-      - name: Dump context
-        run: echo "${{ toJSON(github) }}"
-
-      - name: test-GitHub repo name
-        run: echo "${{ github.repository }}"
+      # - name: Dump context
+      #   run: echo "${{ toJSON(github) }}"
 
       - name: test-GitHub repo name split
-        run: 'echo "${{ github.repository }}" | sed "s|.*/||" ' # just a test, might work
-
+        run: 'echo "${{ github.repository }}" | sed "s|.*/||" '
 
       - name: Get commit details
         id: github-commit-details
   # fix date for current if scheduler
   # fix if branch master - tag imagetag+latest, if scheduler - imagetag
         run: |
+          echo "::set-env name=commit_repo::echo '${{ github.repository }}' | sed 's|.*/||'"
           echo "::set-output name=date::$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
           echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
