@@ -72,6 +72,15 @@ jobs:
       - name: Dump context
         run: echo "${{ toJSON(github) }}"
 
+      - name: test-GitHub repo name
+        run: echo "${{ github.repository }}"
+
+      - name: test-GitHub repo name split
+        run: 'echo "${{ github.repository }}" | awk -F "/" "{print $2}"' # just a test, might work
+
+      - name: test-GitHub repo name isolated?
+        run: echo "${{ github.repository.name }}" # just a test, will not work
+
       - name: Get commit details
         id: github-commit-details
   # fix date for current if scheduler
