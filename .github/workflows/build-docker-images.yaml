@@ -77,10 +77,8 @@ jobs:
   # fix date for current if scheduler
   # fix if branch master - tag imagetag+latest, if scheduler - imagetag
         run: |
-          if
-            - ${{ matrix.ecr_repository_name }} == ""
-          then
-            echo "::set-env name=ECR_REPOSITORY_NAME::$(echo ${{ github.repository }} | sed 's|.*/||')"
+          if ${{ matrix.ecr_repository_name }} == ""; then
+            echo "::set-env name=ECR_REPOSITORY_NAME::$(echo ${{ github.repository }} | sed 's|.*/||')"; 
           else
             echo "::set-env name=ECR_REPOSITORY_NAME::${{ matrix.ecr_repository_name }}"
           fi
