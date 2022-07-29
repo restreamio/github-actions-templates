@@ -77,9 +77,11 @@ jobs:
   # fix date for current if scheduler
   # fix if branch master - tag imagetag+latest, if scheduler - imagetag
         run: |
-          if [ ${{ matrix.ecr_repository_name }} == "" ]
+          if ${{ matrix.ecr_repository_name }}
           then
-            echo "::set-output name=ECR_REPOSITORY_NAME::$(echo ${{ github.repository }} | sed 's|.*/||')"
+            echo "::set-output name=repo_name_fix::$(echo ${{ github.repository }} | sed 's|.*/||')"
+          else
+            echo "::set-output name=repo_name_fix::${{ matrix.ecr_repository_name }}"
           fi
           echo "::set-output name=date::$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
@@ -113,7 +115,7 @@ jobs:
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          ECR_REPOSITORY_NAME: ${{ steps.github-commit-details.outputs.repo_name_fix }}
           IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
