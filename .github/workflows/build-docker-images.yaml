@@ -77,11 +77,11 @@ jobs:
   # fix date for current if scheduler
   # fix if branch master - tag imagetag+latest, if scheduler - imagetag
         run: |
-          if:
+          if
             - ${{ matrix.ecr_repository_name }} == ""
-          then:
+          then
             echo "::set-env name=ECR_REPOSITORY_NAME::$(echo ${{ github.repository }} | sed 's|.*/||')"
-          else:
+          else
             echo "::set-env name=ECR_REPOSITORY_NAME::${{ matrix.ecr_repository_name }}"
           fi
           echo "::set-output name=date::$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)"
