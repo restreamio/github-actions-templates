@@ -77,7 +77,7 @@ jobs:
   # fix date for current if scheduler
   # fix if branch master - tag imagetag+latest, if scheduler - imagetag
         run: |
-          if [[ -z ${{ matrix.ecr_repository_name }} ]]
+          if [[ -v ${{ matrix.ecr_repository_name }} ]]
           then
             echo "::set-output name=repo_name_fix::$(echo ${{ github.repository }} | sed 's|.*/||')"
           else
