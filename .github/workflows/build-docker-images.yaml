@@ -268,13 +268,12 @@ jobs:
         run: |-
           git clone "https://$GIT_TOKEN@github.com/restreamio/${{ inputs.pr_repos }}.git"
           cd ${{ inputs.pr_repos }}
-          ${{ inputs.pr_command }}
 
           if [ -v {${{ github.event.repository.name }}} ]
           then
-            echo "::set-output name=123::321"
+            ${{ inputs.pr_command }}
           else
-            echo "::set-output name=123::321"
+            echo "::set-output name=pr_command_fixed::echo ${{ inputs.pr_command }} | sed 's/${{ github.event.repository.name }}/${{ steps.github-commit-details.outputs.repo_name_fix }}/g'"
           fi
 
 
