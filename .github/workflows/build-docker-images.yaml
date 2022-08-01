@@ -42,7 +42,7 @@ on:
         required: false
       pr_command:
         type: string
-        default: 'yq e ''(.spec.source.helm.parameters[] | select(.name == "image.tag")).value = env(IMAGE_TAG)'' -i ''kustomize/argocd/apps/${{ github.event.repository.name }}.yaml'''
+        default: 'yq e ''(.spec.source.helm.parameters[] | select(.name == "image.tag")).value = env(IMAGE_TAG)'' -i ''kustomize/argocd/apps/${{ steps.github-commit-details.outputs.repo_name_fix }}.yaml'''
         required: false
     secrets:
       gh_token:
