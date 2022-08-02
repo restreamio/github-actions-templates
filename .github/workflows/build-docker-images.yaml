@@ -260,6 +260,7 @@ jobs:
           sha: ${{github.event.pull_request.head.sha || github.sha}}
 
       - name: Create git commits
+        id: github-git-commit
         if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
@@ -274,6 +275,7 @@ jobs:
             ${{ inputs.pr_command }}
           else
             echo "::set-output name=pr_command_fixed::echo ${{ inputs.pr_command }} | sed 's/${{ github.event.repository.name }}/${{ steps.github-commit-details.outputs.repo_name_fix }}/g'"
+            ${{ steps.github-git-commit.outputs.pr_command_fixed }}
           fi
 
 
