@@ -72,10 +72,10 @@ jobs:
       - name: Get commit details
         id: github-commit-details
         run: |
-          echo "::set-output name=date::$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)"
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
-          echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
+          echo "date=$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')" >> $GITHUB_OUTPUT
+          echo "contributor=$(git log -1 --pretty=format:'%an' |  tr -d '\n')" >> $GITHUB_OUTPUT
         timeout-minutes: 1
 
       - name: Set up Docker Buildx
