@@ -44,16 +44,16 @@ jobs:
       - name: Get commit details
         id: github-commit-details
         run: |
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=date::$(date +'%y.%m.%d%H%M')"
-          echo "::set-output name=branch::$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')"
-          echo "::set-output name=contributor::$(git log -1 --pretty=format:'%an' |  tr -d '\n')"
-          echo "::set-output name=commit_hash::$(git rev-parse HEAD)"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%y.%m.%d%H%M')" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')" >> $GITHUB_OUTPUT
+          echo "contributor=$(git log -1 --pretty=format:'%an' |  tr -d '\n')" >> $GITHUB_OUTPUT
+          echo "commit_hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         timeout-minutes: 1
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
         timeout-minutes: 1
 
       - name: Restore node_modules cache
@@ -89,10 +89,11 @@ jobs:
         env:
           ORIGIN: ${{ inputs.s3_bucket_name }}.s3.amazonaws.com
         run: |
-          export DISTRIBUTIONS=$(aws cloudfront list-distributions \
+          echo "DISTRIBUTIONS=$(aws cloudfront list-distributions \
             --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?origin=='${{ env.ORIGIN }}'].id" \
             --output text \
-          )
+          )" >> $GITHUB_ENV
+
           for id in $DISTRIBUTIONS; do
             aws cloudfront create-invalidation --distribution-id $id --paths "/*"
           done
