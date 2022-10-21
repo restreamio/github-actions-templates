@@ -47,7 +47,9 @@ jobs:
 
       - name: Setup python2
         if: inputs.install_python2
-        run: apt install python2 -y
+        uses: actions/setup-python@v4
+        with:
+          python-version: '2.7.18' 
         timeout-minutes: 5
 
       - name: Get commit details
