@@ -48,7 +48,7 @@ jobs:
       - name: Setup python2
         if: inputs.install_python2
         run: apt install python2 -y
-        timeout-minutes: 5    
+        timeout-minutes: 5
 
       - name: Get commit details
         id: github-commit-details
