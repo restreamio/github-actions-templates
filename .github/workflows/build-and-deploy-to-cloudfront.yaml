@@ -21,6 +21,10 @@ on:
         type: string
         default: "./dist"
         required: false
+      install_python2:
+        type: boolean
+        default: false
+        required: false
 
 jobs:
   build:
@@ -40,6 +44,12 @@ jobs:
       - name: Setup yarn
         run: npm install -g yarn
         timeout-minutes: 5
+
+      - name: Setup python2
+        if: inputs.install_python2
+        run: apt install python2 -y
+        timeout-minutes: 5
+        
 
       - name: Get commit details
         id: github-commit-details
