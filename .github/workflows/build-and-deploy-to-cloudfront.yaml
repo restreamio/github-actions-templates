@@ -18,11 +18,7 @@ on:
         type: string
         default: "yarn build"
         required: false
-      cache_lock_file:
-        type: string
-        default: "**/yarn.lock"
-        required: false
-      send_source_map:
+      send_source_maps:
         type: boolean
         default: false
         required: false
@@ -42,11 +38,11 @@ on:
         type: string
         default: "1.0.0"
         required: false
-      sentry_org_slug:
+      sentry_org:
         type: string
         default: "restream-io"
         required: false
-      sentry_project_slug:
+      sentry_project:
         type: string
         default: ""
         required: false
@@ -58,7 +54,7 @@ on:
         type: string
         required: false
     secrets:
-      sentry_credentials:
+      sentry_auth_token:
         required: false
       datadog_api_key:
         required: false
@@ -94,23 +90,23 @@ jobs:
       - name: Upload source maps to Sentry
         uses: getsentry/action-release@v1.2.0
         env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.sentry_credentials }}
-          SENTRY_ORG: ${{ inputs.sentry_org_slug }}
-          SENTRY_PROJECT: ${{ inputs.sentry_project_slug }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
+          SENTRY_ORG: ${{ inputs.sentry_org }}
+          SENTRY_PROJECT: ${{ inputs.sentry_project }}
         timeout-minutes: 15
         with:
           environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
           # We do not use Github integration, hence it will always fail
           set_commits: 'skip'
           version: ${{ inputs.sentry_release_version }}
-        if: inputs.send_source_map
+        if: inputs.send_source_maps
 
       - name: Upload source maps to DataDog (old version)
         run: npm run datadog-ci -- sourcemaps upload ${{ inputs.release_dir }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 15
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
-        if: inputs.send_source_map
+        if: inputs.send_source_maps
 
       - name: Deploy to CloudFront
         if: github.ref == 'refs/heads/master'
