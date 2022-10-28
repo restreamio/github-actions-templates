@@ -14,6 +14,14 @@ on:
         # Will use info from .nvmrc if set to ''
         default: "16"
         required: false
+      build_command:
+        type: string
+        default: "yarn build"
+        required: false
+      install_dependencies_command:
+        type: string
+        default: "yarn install --frozen-lockfile"
+        required: false
       cache_lock_file:
         type: string
         default: "**/yarn.lock"
@@ -128,32 +136,16 @@ jobs:
             ${{ github.event.repository.name }}-npm-
         if: inputs.build_with == 'npm'
 
-      - name: Install dependencies for YARN
-        run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: ${{ inputs.install_dependencies_command }}
         timeout-minutes: 10
-        if: inputs.build_with == 'yarn'
 
-      - name: Install dependencies for NPM
-        run: npm ci
-        timeout-minutes: 10
-        if: inputs.build_with == 'npm'
-
-      - name: Build source code with Yarn
-        run: yarn build
+      - name: Build source code
+        run: ${{ inputs.build_command }}
         timeout-minutes: 15
         env:
           COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
           NODE_OPTIONS: ${{ inputs.node_options }}
-        if: inputs.build_with == 'yarn'
-
-      - name: Build source code with NPM
-        run: |
-          npm run build
-        timeout-minutes: 15
-        env:
-          COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
-          NODE_OPTIONS: ${{ inputs.node_options }}
-        if: inputs.build_with == 'npm'
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.2.0
