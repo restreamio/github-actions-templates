@@ -11,7 +11,7 @@ on:
         required: true
       node_version:
         type: string
-        default: "16"
+        # Will use info from .nvmrc if available
         required: false
       cache_lock_file:
         type: string
@@ -43,7 +43,6 @@ on:
         required: false
       node_options:
         type: string
-        default: "--max_old_space_size=8192"
         required: false
     secrets:
       sentry_credentials:
@@ -64,11 +63,14 @@ jobs:
         uses: actions/setup-node@v3
         timeout-minutes: 5
         with:
-          node-version: ${{ inputs.node_version}}
+          node-version: ${{ inputs.node_version }}
+          node-version-file: '.nvmrc'
+          cache: inputs.build_with
 
       - name: Setup yarn
         run: npm install -g yarn
         timeout-minutes: 5
+        if: inputs.build_with == 'yarn'
 
       - name: Get commit details
         id: github-commit-details
@@ -131,6 +133,7 @@ jobs:
         timeout-minutes: 15
         env:
           COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
+          NODE_OPTIONS: ${{ inputs.node_options }}
         if: inputs.build_with == 'yarn'
 
       - name: Build source code with NPM
@@ -140,6 +143,7 @@ jobs:
         timeout-minutes: 15
         env:
           COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
+          NODE_OPTIONS: ${{ inputs.node_options }}
         if: inputs.build_with == 'npm'
 
       - name: Sentry Release
