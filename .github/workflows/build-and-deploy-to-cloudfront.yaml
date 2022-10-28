@@ -1,4 +1,9 @@
 name: Build and Deploy to CloudFront
+
+concurrency:
+  group: ${{ github.event.repository.name }}-build-n-deploy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 on:
   workflow_call:
     inputs:
