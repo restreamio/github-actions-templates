@@ -108,6 +108,9 @@ jobs:
         with:
           path: node_modules/.cache/
           key: build-cache-${{ (inputs.package_manager == 'yarn') && 'yarn.lock' || 'package-lock.json' }}-${{ github.ref }}
+          restore-keys: |
+            build-cache-${{ (inputs.package_manager == 'yarn') && 'yarn.lock' || 'package-lock.json' }}
+            build-cache-
 
       - name: Build
         run: ${{ inputs.build_command }}
