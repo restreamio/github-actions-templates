@@ -26,11 +26,15 @@ on:
         type: string
         default: "./dist"
         required: false
-      sentry_release_version:
+      invalidate_cloudfront_cache:
+        type: boolean
+        default: true
+        required: false
+      datadog_release_version:
         type: string
         default: "1.0.0"
         required: false
-      datadog_release_version:
+      sentry_release_version:
         type: string
         default: "1.0.0"
         required: false
@@ -179,18 +183,17 @@ jobs:
           cd ${{ inputs.release_dir }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
 
-# TODO: that should not run for Studio
-      # - name: Invalidation Cloudfront cache
-      #   if: github.ref == 'refs/heads/master'
-      #   timeout-minutes: 5
-      #   env:
-      #     ORIGIN: ${{ inputs.s3_bucket_name }}.s3.amazonaws.com
-      #   run: |
-      #     echo "DISTRIBUTIONS=$(aws cloudfront list-distributions \
-      #       --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?origin=='${{ env.ORIGIN }}'].id" \
-      #       --output text \
-      #     )" >> $GITHUB_ENV
+      - name: Invalidation Cloudfront cache
+        if: ${{ (inputs.invalidate_cloudfront_cache) && (github.ref == 'refs/heads/master') }}
+        timeout-minutes: 5
+        env:
+          ORIGIN: ${{ inputs.s3_bucket_name }}.s3.amazonaws.com
+        run: |
+          echo "DISTRIBUTIONS=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?origin=='${{ env.ORIGIN }}'].id" \
+            --output text \
+          )" >> $GITHUB_ENV
 
-      #     for id in $DISTRIBUTIONS; do
-      #       aws cloudfront create-invalidation --distribution-id $id --paths "/*"
-      #     done
+          for id in $DISTRIBUTIONS; do
+            aws cloudfront create-invalidation --distribution-id $id --paths "/*"
+          done
