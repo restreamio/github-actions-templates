@@ -82,7 +82,7 @@ on:
 
 jobs:
   build:
-    name: Build and upload to cloudfront
+    name: Build and Deploy to CloudFront
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
       - name: Checkout source code
