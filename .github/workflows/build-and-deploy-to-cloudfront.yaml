@@ -44,7 +44,7 @@ on:
       # ===========
       # Source maps
       # ===========
-      send_source_maps:
+      upload_source_maps:
         type: boolean
         default: false
         required: false
@@ -117,7 +117,7 @@ jobs:
           NODE_OPTIONS: ${{ inputs.node_options }}
 
       - name: Upload source maps to Sentry
-        if: inputs.send_source_maps
+        if: inputs.upload_source_maps
         uses: getsentry/action-release@v1.2.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
@@ -131,7 +131,7 @@ jobs:
           version: ${{ inputs.sentry_release_version }}
 
       - name: Upload source maps to DataDog (old version)
-        if: inputs.send_source_maps
+        if: inputs.upload_source_maps
         run: npm run datadog-ci -- sourcemaps upload ${{ inputs.build_dir }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 5
         env:
