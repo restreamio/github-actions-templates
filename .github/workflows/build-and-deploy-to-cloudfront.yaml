@@ -133,10 +133,6 @@ jobs:
           COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
         if: inputs.build_with == 'yarn'
 
-      - name:
-        if: inputs.build_with == 'npm'
-
-
       - name: Build source code with NPM
         run: |
           set NODE_OPTIONS=${{ inputs.node_options }}
