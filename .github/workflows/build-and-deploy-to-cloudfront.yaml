@@ -11,7 +11,8 @@ on:
         required: true
       node_version:
         type: string
-        # Will use info from .nvmrc if available
+        # Will use info from .nvmrc if set to ''
+        default: "16"
         required: false
       cache_lock_file:
         type: string
@@ -65,7 +66,7 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
           node-version-file: '.nvmrc'
-          cache: inputs.build_with
+          cache: ${{ inputs.build_with }}
 
       - name: Setup yarn
         run: npm install -g yarn
