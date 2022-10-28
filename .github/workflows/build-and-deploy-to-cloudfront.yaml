@@ -26,7 +26,11 @@ on:
         type: string
         default: "./dist"
         required: false
-      release_version:
+      sentry_release_version:
+        type: string
+        default: "1.0.0"
+        required: false
+      datadog_release_version:
         type: string
         default: "1.0.0"
         required: false
@@ -81,8 +85,9 @@ jobs:
           echo "branch=$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')" >> $GITHUB_OUTPUT
           echo "contributor=$(git log -1 --pretty=format:'%an' |  tr -d '\n')" >> $GITHUB_OUTPUT
           echo "long_commit=$(git log -n 1 --pretty=format:'%H') >> $GITHUB_OUTPUT"
-          echo "sentry_release_name=$('${{ github.event.repository.name }}@${{ inputs.release_version }}+${{ steps.github-commit-details.outputs.long_commit }}.${{ github.event.repository.name }}')"
           echo "commit_hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "sentry_release_version=$(echo ${{ inputs.sentry_release_version }})" >> $GITHUB_OUTPUT
+          echo "datadog_release_version=$(echo ${{ inputs.sentry_release_version }})" >> $GITHUB_OUTPUT
         timeout-minutes: 1
 
       - name: Get YARN cache directory path
@@ -155,22 +160,12 @@ jobs:
         timeout-minutes: 15
         with:
           environment: production
-          version: ${{ inputs.release_version }}
+          version: ${{ inputs.sentry_release_version }}
         if: inputs.send_source_map
-
-      # - name: Prepare sentry release (old version)
-      #   run: |
-      #     echo "${{ secrets.sentry_credentials }}" > ~/.sentryclirc
-      #     curl -sL https://sentry.io/get-cli/ | bash
-      #     sentry-cli releases new ${{ steps.github-commit-details.outputs.sentry_release_name }}
-      #     sentry-cli releases files ${{ steps.github-commit-details.outputs.sentry_release_name }} upload-sourcemaps ./build/
-      #     sentry-cli releases finalize ${{ steps.github-commit-details.outputs.sentry_release_name }}
-      #   timeout-minutes: 15
-      #   if: inputs.send_source_map
 
       - name: Upload to Datadog and remove sourcemaps (old version)
         run: |
-          npm run datadog-ci -- sourcemaps upload ./build/ --service=\"${{ github.event.repository.name }}\" --release-version=${{ inputs.release_version }}_"${{ steps.github-commit-details.outputs.long_commit }}"."${{ github.event.repository.name }}" --minified-path-prefix=/
+          npm run datadog-ci -- sourcemaps upload ${{ inputs.release_dir }} --service=\"${{ github.event.repository.name }}\" --release-version=${{ inputs.datadog_release_version }}" --minified-path-prefix=/
           npm run remove-sourcemaps
         timeout-minutes: 15
         env:
