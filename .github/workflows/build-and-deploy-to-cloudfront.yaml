@@ -120,7 +120,7 @@ jobs:
       - name: Install dependencies for NPM
         run: npm ci
         timeout-minutes: 10
-        if: inputs.build_with == 'yarn'
+        if: inputs.build_with == 'npm'
 
       - name: Build source code with Yarn
         run: yarn build
