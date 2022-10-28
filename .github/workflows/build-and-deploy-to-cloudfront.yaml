@@ -106,7 +106,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
           SENTRY_ORG: ${{ inputs.sentry_org }}
           SENTRY_PROJECT: ${{ inputs.sentry_project }}
-        timeout-minutes: 15
+        timeout-minutes: 5
         with:
           environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
           # We do not use Github integration, hence it will always fail
@@ -116,7 +116,7 @@ jobs:
       - name: Upload source maps to DataDog (old version)
         if: inputs.send_source_maps
         run: npm run datadog-ci -- sourcemaps upload ${{ inputs.build_dir }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
-        timeout-minutes: 15
+        timeout-minutes: 5
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
 
