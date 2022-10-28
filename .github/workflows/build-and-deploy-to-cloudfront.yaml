@@ -98,7 +98,7 @@ jobs:
           cache: ${{ inputs.package_manager }}
 
       - name: Install dependencies
-        run: ${{ (inputs.package_manager == yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
+        run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 10
 
       - name: Cache build
