@@ -43,7 +43,7 @@ on:
         required: false
       node_options:
         type: string
-        default: "--max_old_space_size=9000"
+        default: "--max_old_space_size=8192"
         required: false
     secrets:
       sentry_credentials:
@@ -135,7 +135,7 @@ jobs:
 
       - name: Build source code with NPM
         run: |
-          set NODE_OPTIONS=${{ inputs.node_options }}
+          export NODE_OPTIONS=${{ inputs.node_options }}
           npm run build
         timeout-minutes: 15
         env:
