@@ -163,7 +163,7 @@ jobs:
           SENTRY_PROJECT: ${{ inputs.sentry_project_slug }}
         timeout-minutes: 15
         with:
-          environment: production
+          environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
           # We do not use Github integration, hence it will always fail
           set_commits: 'skip'
           version: ${{ inputs.sentry_release_version }}
