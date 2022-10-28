@@ -102,12 +102,12 @@ jobs:
         timeout-minutes: 15
         env:
           COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
-        if: inputs.build_with == "yarn"
+        if: inputs.build_with == 'yarn'
 
       - name: Build source code with NPM
         run: npm run build
         timeout-minutes: 15
-        if: inputs.build_with == "npm"
+        if: inputs.build_with == 'npm'
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.2.0
