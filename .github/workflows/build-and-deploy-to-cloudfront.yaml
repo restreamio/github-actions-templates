@@ -76,7 +76,7 @@ jobs:
         uses: actions/checkout@v3
         timeout-minutes: 1
 
-      - name: Setup NodeJs and npm
+      - name: Setup Node
         uses: actions/setup-node@v3
         timeout-minutes: 5
         with:
@@ -101,40 +101,6 @@ jobs:
           echo "sentry_release_version=$(echo ${{ inputs.sentry_release_version }})" >> $GITHUB_OUTPUT
           echo "datadog_release_version=$(echo ${{ inputs.sentry_release_version }})" >> $GITHUB_OUTPUT
         timeout-minutes: 1
-
-      - name: Get YARN cache directory path
-        id: yarn-cache-dir-path
-        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
-        timeout-minutes: 1
-        if: inputs.build_with == 'yarn'
-
-      - name: Get NPM cache directory path
-        id: npm-cache-dir-path
-        run: echo "dir=$(npm get cache)" >> $GITHUB_OUTPUT
-        timeout-minutes: 1
-        if: inputs.build_with == 'npm'
-
-      - name: Restore node_modules cache for YARN
-        uses: actions/cache@v3
-        id: yarn-cache
-        timeout-minutes: 10
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ github.event.repository.name }}-yarn-${{ hashFiles( inputs.cache_lock_file ) }}
-          restore-keys: |
-            ${{ github.event.repository.name }}-yarn-
-        if: inputs.build_with == 'yarn'
-
-      - name: Restore node_modules cache for NPM
-        uses: actions/cache@v3
-        id: npm-cache
-        timeout-minutes: 10
-        with:
-          path: ${{ steps.npm-cache-dir-path.outputs.dir }}
-          key: ${{ github.event.repository.name }}-npm-${{ hashFiles( inputs.cache_lock_file ) }}
-          restore-keys: |
-            ${{ github.event.repository.name }}-npm-
-        if: inputs.build_with == 'npm'
 
       - name: Install dependencies
         run: ${{ inputs.install_dependencies_command }}
