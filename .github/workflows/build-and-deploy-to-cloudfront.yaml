@@ -33,6 +33,10 @@ on:
         type: string
         default: "yarn build"
         required: false
+      cache_build:
+        type: boolean
+        default: false
+        required: false
       build_dir:
         type: string
         default: "./dist"
@@ -96,6 +100,14 @@ jobs:
       - name: Install dependencies
         run: ${{ (inputs.package_manager == yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 10
+
+      - name: Cache build
+        if: inputs.cache_build
+        timeout-minutes: 5
+        uses: actions/cache@v2
+        with:
+          path: node_modules/.cache/
+          key: build-cache-${{ (inputs.package_manager == yarn') && 'yarn.lock' || 'package-lock.json' }}-${{ github.ref }}
 
       - name: Build
         run: ${{ inputs.build_command }}
