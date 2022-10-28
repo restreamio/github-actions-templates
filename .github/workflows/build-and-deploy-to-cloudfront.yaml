@@ -41,6 +41,10 @@ on:
         type: string
         default: "yarn"
         required: false
+      node_options:
+        type: string
+        default: "--max_old_space_size=4096"
+        required: false
     secrets:
       sentry_credentials:
         required: false
@@ -129,8 +133,14 @@ jobs:
           COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
         if: inputs.build_with == 'yarn'
 
+      - name:
+        if: inputs.build_with == 'npm'
+
+
       - name: Build source code with NPM
-        run: npm run build
+        run: |
+          set NODE_OPTIONS=${{ inputs.node_options }}
+          npm run build
         timeout-minutes: 15
         env:
           COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
