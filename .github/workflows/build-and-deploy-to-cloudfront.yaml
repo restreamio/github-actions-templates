@@ -115,9 +115,7 @@ jobs:
         if: inputs.send_source_map
 
       - name: Upload to Datadog and remove sourcemaps (old version)
-        run: |
-          npm run datadog-ci -- sourcemaps upload ${{ inputs.release_dir }} --service=\"${{ github.event.repository.name }}\" --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
-          npm run remove-sourcemaps
+        run: npm run datadog-ci -- sourcemaps upload ${{ inputs.release_dir }} --service=\"${{ github.event.repository.name }}\" --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 15
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
@@ -127,6 +125,7 @@ jobs:
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 15
         run: |
+          npm run remove-sourcemaps
           cd ${{ inputs.release_dir }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
 
