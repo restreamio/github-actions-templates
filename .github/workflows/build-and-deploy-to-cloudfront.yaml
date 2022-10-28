@@ -78,12 +78,19 @@ jobs:
           echo "commit_hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         timeout-minutes: 1
 
-      - name: Get yarn cache directory path
+      - name: Get YARN cache directory path
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
         timeout-minutes: 1
+        if: inputs.build_with == 'yarn'
 
-      - name: Restore node_modules cache
+      - name: Get NPM cache directory path
+        id: npm-cache-dir-path
+        run: echo "dir=$(npm get cache)" >> $GITHUB_OUTPUT
+        timeout-minutes: 1
+        if: inputs.build_with == 'npm'
+
+      - name: Restore node_modules cache for YARN
         uses: actions/cache@v3
         id: yarn-cache
         timeout-minutes: 10
@@ -92,10 +99,28 @@ jobs:
           key: ${{ github.event.repository.name }}-yarn-${{ hashFiles( inputs.cache_lock_file ) }}
           restore-keys: |
             ${{ github.event.repository.name }}-yarn-
+        if: inputs.build_with == 'yarn'
 
-      - name: Install dependencies
+      - name: Restore node_modules cache for NPM
+        uses: actions/cache@v3
+        id: npm-cache
+        timeout-minutes: 10
+        with:
+          path: ${{ steps.npm-cache-dir-path.outputs.dir }}
+          key: ${{ github.event.repository.name }}-npm-${{ hashFiles( inputs.cache_lock_file ) }}
+          restore-keys: |
+            ${{ github.event.repository.name }}-npm-
+        if: inputs.build_with == 'npm'
+
+      - name: Install dependencies for YARN
         run: yarn install --frozen-lockfile
         timeout-minutes: 10
+        if: inputs.build_with == 'yarn'
+
+      - name: Install dependencies for NPM
+        run: npm ci
+        timeout-minutes: 10
+        if: inputs.build_with == 'yarn'
 
       - name: Build source code with Yarn
         run: yarn build
