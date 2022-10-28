@@ -2,41 +2,42 @@ name: Build and Deploy to CloudFront
 on:
   workflow_call:
     inputs:
-      build_instance_type:
+      # =====
+      # Setup
+      # =====
+      instance_type:
         type: string
         default: "xlarge"
         required: false
-      s3_bucket_name:
-        type: string
-        required: true
       node_version:
         type: string
-        # Will use info from .nvmrc if set to ''
+        # If set to '' version will be extracted from .nvmrc file
         default: "16"
         required: false
+      node_options:
+        type: string
+        required: false
+      package_manager:
+        type: string
+        default: "yarn"
+        required: false
+      # =====
+      # Build
+      # =====
       build_command:
         type: string
         default: "yarn build"
         required: false
-      send_source_maps:
-        type: boolean
-        default: false
-        required: false
-      release_dir:
+      build_dir:
         type: string
         default: "./dist"
         required: false
-      invalidate_cloudfront_cache:
+      # ===========
+      # Source maps
+      # ===========
+      send_source_maps:
         type: boolean
-        default: true
-        required: false
-      datadog_release_version:
-        type: string
-        default: "1.0.0"
-        required: false
-      sentry_release_version:
-        type: string
-        default: "1.0.0"
+        default: false
         required: false
       sentry_org:
         type: string
@@ -46,12 +47,23 @@ on:
         type: string
         default: ""
         required: false
-      build_with:
+      sentry_release_version:
         type: string
-        default: "yarn"
+        default: "1.0.0"
         required: false
-      node_options:
+      datadog_release_version:
         type: string
+        default: "1.0.0"
+        required: false
+      # ======
+      # Deploy
+      # ======
+      s3_bucket_name:
+        type: string
+        required: true
+      invalidate_cloudfront_cache:
+        type: boolean
+        default: true
         required: false
     secrets:
       sentry_auth_token:
@@ -62,7 +74,7 @@ on:
 jobs:
   build:
     name: Build and upload to cloudfront
-    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
+    runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
@@ -74,10 +86,10 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
           node-version-file: '.nvmrc'
-          cache: ${{ inputs.build_with }}
+          cache: ${{ inputs.package_manager }}
 
       - name: Install dependencies
-        run: ${{ (inputs.build_with == yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
+        run: ${{ (inputs.package_manager == yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 10
 
       - name: Build
@@ -88,6 +100,7 @@ jobs:
           NODE_OPTIONS: ${{ inputs.node_options }}
 
       - name: Upload source maps to Sentry
+        if: inputs.send_source_maps
         uses: getsentry/action-release@v1.2.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
@@ -99,21 +112,20 @@ jobs:
           # We do not use Github integration, hence it will always fail
           set_commits: 'skip'
           version: ${{ inputs.sentry_release_version }}
-        if: inputs.send_source_maps
 
       - name: Upload source maps to DataDog (old version)
-        run: npm run datadog-ci -- sourcemaps upload ${{ inputs.release_dir }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
+        if: inputs.send_source_maps
+        run: npm run datadog-ci -- sourcemaps upload ${{ inputs.build_dir }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 15
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
-        if: inputs.send_source_maps
 
       - name: Deploy to CloudFront
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 15
         run: |
           npm run remove-sourcemaps
-          cd ${{ inputs.release_dir }}
+          cd ${{ inputs.build_dir }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
 
       - name: Invalidate CloudFront cache
