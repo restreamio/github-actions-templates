@@ -109,6 +109,7 @@ jobs:
         with:
           environment: production
           version: ${{ inputs.release_version }}
+        if: inputs.send_source_map
 
       # - name: Prepare sentry release (old version)
       #   run: |
@@ -127,7 +128,7 @@ jobs:
         timeout-minutes: 15
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
-        if: inputs.send_source_map && secrets.sentry_credentials
+        if: inputs.send_source_map
 
       - name: Deploy CloudFront
         if: github.ref == 'refs/heads/master'
