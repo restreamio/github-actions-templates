@@ -118,7 +118,7 @@ jobs:
         if: inputs.build_with == 'yarn'
 
       - name: Install dependencies for NPM
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         timeout-minutes: 10
         if: inputs.build_with == 'npm'
 
