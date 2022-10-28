@@ -164,6 +164,8 @@ jobs:
         timeout-minutes: 15
         with:
           environment: production
+          # We do not use Github integration, hence it will always fail
+          set_commits: 'skip'
           version: ${{ inputs.sentry_release_version }}
         if: inputs.send_source_map
 
