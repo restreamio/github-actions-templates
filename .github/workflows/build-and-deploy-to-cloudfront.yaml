@@ -37,6 +37,10 @@ on:
         type: string
         default: ""
         required: false
+      build_with:
+        type: string
+        default: "yarn"
+        required: false
     secrets:
       sentry_credentials:
         required: false
@@ -93,11 +97,17 @@ jobs:
         run: yarn install --frozen-lockfile
         timeout-minutes: 10
 
-      - name: Build source code
+      - name: Build source code with Yarn
         run: yarn build
         timeout-minutes: 15
         env:
           COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
+        if: inputs.build_with == "yarn"
+
+      - name: Build source code with NPM
+        run: npm run build
+        timeout-minutes: 15
+        if: inputs.build_with == "npm"
 
       - name: Sentry Release
         uses: getsentry/action-release@v1.2.0
