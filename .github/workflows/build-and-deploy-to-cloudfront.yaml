@@ -93,7 +93,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Build
-        run: ${{ (inputs.build_command }}
+        run: ${{ inputs.build_command }}
         timeout-minutes: 15
         env:
           COMMIT_HASH: ${{ github.sha }}
