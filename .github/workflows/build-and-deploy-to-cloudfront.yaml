@@ -1,4 +1,4 @@
-name: Build and Deploy to Cloudfront
+name: Build and Deploy to CloudFront
 on:
   workflow_call:
     inputs:
@@ -17,10 +17,6 @@ on:
       build_command:
         type: string
         default: "yarn build"
-        required: false
-      install_dependencies_command:
-        type: string
-        default: "yarn install --frozen-lockfile"
         required: false
       cache_lock_file:
         type: string
@@ -84,23 +80,18 @@ jobs:
           node-version-file: '.nvmrc'
           cache: ${{ inputs.build_with }}
 
-      - name: Setup yarn
-        run: npm install -g yarn
-        timeout-minutes: 5
-        if: inputs.build_with == 'yarn'
-
       - name: Install dependencies
-        run: ${{ inputs.install_dependencies_command }}
+        run: ${{ (inputs.build_with == yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 10
 
-      - name: Build source code
-        run: ${{ inputs.build_command }}
+      - name: Build
+        run: ${{ (inputs.build_command }}
         timeout-minutes: 15
         env:
           COMMIT_HASH: ${{ github.sha }}
           NODE_OPTIONS: ${{ inputs.node_options }}
 
-      - name: Sentry Release
+      - name: Upload source maps to Sentry
         uses: getsentry/action-release@v1.2.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.sentry_credentials }}
@@ -114,14 +105,14 @@ jobs:
           version: ${{ inputs.sentry_release_version }}
         if: inputs.send_source_map
 
-      - name: Upload to Datadog and remove sourcemaps (old version)
-        run: npm run datadog-ci -- sourcemaps upload ${{ inputs.release_dir }} --service=\"${{ github.event.repository.name }}\" --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
+      - name: Upload source maps to DataDog (old version)
+        run: npm run datadog-ci -- sourcemaps upload ${{ inputs.release_dir }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 15
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
         if: inputs.send_source_map
 
-      - name: Deploy CloudFront
+      - name: Deploy to CloudFront
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 15
         run: |
@@ -129,7 +120,7 @@ jobs:
           cd ${{ inputs.release_dir }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
 
-      - name: Invalidation Cloudfront cache
+      - name: Invalidate CloudFront cache
         if: ${{ (inputs.invalidate_cloudfront_cache) && (github.ref == 'refs/heads/master') }}
         timeout-minutes: 5
         env:
