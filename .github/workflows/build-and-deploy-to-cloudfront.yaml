@@ -1,4 +1,4 @@
-name: Build and Deploy to CloudFront
+name: Build and deploy to CloudFront
 
 concurrency:
   group: ${{ github.event.repository.name }}-build-n-deploy-${{ github.event.pull_request.number }}
@@ -82,7 +82,7 @@ on:
 
 jobs:
   build:
-    name: Build and Deploy to CloudFront
+    name: Build and deploy to CloudFront
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
       - name: Checkout source code
