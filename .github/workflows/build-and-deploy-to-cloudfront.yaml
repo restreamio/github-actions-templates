@@ -138,7 +138,6 @@ jobs:
 
       - name: Build source code with NPM
         run: |
-          export NODE_OPTIONS=${{ inputs.node_options }}
           npm run build
         timeout-minutes: 15
         env:
