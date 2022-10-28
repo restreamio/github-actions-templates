@@ -107,7 +107,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: node_modules/.cache/
-          key: build-cache-${{ (inputs.package_manager == yarn') && 'yarn.lock' || 'package-lock.json' }}-${{ github.ref }}
+          key: build-cache-${{ (inputs.package_manager == 'yarn') && 'yarn.lock' || 'package-lock.json' }}-${{ github.ref }}
 
       - name: Build
         run: ${{ inputs.build_command }}
