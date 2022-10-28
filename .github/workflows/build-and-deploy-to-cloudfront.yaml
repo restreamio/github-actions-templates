@@ -43,7 +43,7 @@ on:
         required: false
       node_options:
         type: string
-        default: "--max_old_space_size=4096"
+        default: "--max_old_space_size=6000"
         required: false
     secrets:
       sentry_credentials:
