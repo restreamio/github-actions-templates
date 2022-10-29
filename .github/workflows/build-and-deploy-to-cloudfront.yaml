@@ -12,7 +12,7 @@ on:
       # =====
       instance_type:
         type: string
-        default: "xlarge"
+        default: xlarge
         required: false
       node_version:
         type: string
@@ -24,21 +24,21 @@ on:
         required: false
       package_manager:
         type: string
-        default: "yarn"
+        default: yarn
         required: false
       # =====
       # Build
       # =====
       build_command:
         type: string
-        default: "yarn build"
+        default: yarn build
         required: false
       build_cache_path:
         type: string
         required: false
       build_path:
         type: string
-        default: "./dist"
+        default: ./dist
         required: false
       # ===========
       # Source maps
@@ -49,11 +49,11 @@ on:
         required: false
       sentry_org:
         type: string
-        default: "restream-io"
+        default: restream-io
         required: false
       sentry_project:
         type: string
-        default: "__project_name__"
+        default: __project_name__
         required: false
       sentry_release_version:
         type: string
@@ -93,7 +93,7 @@ jobs:
         timeout-minutes: 5
         with:
           node-version: ${{ inputs.node_version }}
-          node-version-file: '.nvmrc'
+          node-version-file: .nvmrc
           cache: ${{ inputs.package_manager }}
 
       - name: Install dependencies
@@ -129,7 +129,7 @@ jobs:
         with:
           environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
           # We do not use Github integration, hence it will always fail
-          set_commits: 'skip'
+          set_commits: skip
           version: ${{ inputs.sentry_release_version }}
 
       - name: Upload source maps to DataDog (old version)
