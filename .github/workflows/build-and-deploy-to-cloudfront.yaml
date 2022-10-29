@@ -33,11 +33,10 @@ on:
         type: string
         default: "yarn build"
         required: false
-      cache_build:
-        type: boolean
-        default: false
+      build_cache_path:
+        type: string
         required: false
-      build_dir:
+      build_path:
         type: string
         default: "./dist"
         required: false
@@ -54,7 +53,7 @@ on:
         required: false
       sentry_project:
         type: string
-        default: ""
+        default: "__project_name__"
         required: false
       sentry_release_version:
         type: string
@@ -102,11 +101,11 @@ jobs:
         timeout-minutes: 10
 
       - name: Cache build
-        if: inputs.cache_build
+        if: inputs.build_cache_path
         timeout-minutes: 5
         uses: actions/cache@v3
         with:
-          path: node_modules/.cache/
+          path: ${{ inputs.build_cache_path }}
           key: build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-${{ github.ref }}
           restore-keys: |
             build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
@@ -135,7 +134,7 @@ jobs:
 
       - name: Upload source maps to DataDog (old version)
         if: inputs.upload_source_maps
-        run: npm run datadog-ci -- sourcemaps upload ${{ inputs.build_dir }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
+        run: npm run datadog-ci -- sourcemaps upload ${{ inputs.build_path }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 5
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
@@ -145,7 +144,7 @@ jobs:
         timeout-minutes: 15
         run: |
           npm run remove-sourcemaps
-          cd ${{ inputs.build_dir }}
+          cd ${{ inputs.build_path }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
 
       - name: Invalidate CloudFront cache
