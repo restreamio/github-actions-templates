@@ -132,7 +132,7 @@ jobs:
           set_commits: skip
           version: ${{ inputs.sentry_release_version }}
 
-      - name: Upload source maps to DataDog (old version)
+      - name: Upload source maps to DataDog
         if: inputs.upload_source_maps
         run: npm run datadog-ci -- sourcemaps upload ${{ inputs.build_path }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 5
