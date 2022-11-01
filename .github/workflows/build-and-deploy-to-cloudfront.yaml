@@ -134,7 +134,7 @@ jobs:
 
       - name: Upload source maps to DataDog
         if: inputs.upload_source_maps
-        run: npx datadog-ci@datadog/datadog-ci sourcemaps upload ${{ inputs.build_path }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
+        run: npx @datadog/datadog-ci sourcemaps upload ${{ inputs.build_path }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 5
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
