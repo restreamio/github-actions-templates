@@ -84,6 +84,14 @@ jobs:
     name: Build and deploy to CloudFront
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
+      # To make debugging easier in case of issues
+      - name: Show context
+        env:
+          GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
+          INPUTS_JSON: ${{ toJson(inputs) }}
+        run: |
+          echo Github context: "$GITHUB_CONTEXT_JSON"
+          echo Inputs: "$INPUTS_JSON"
       - name: Checkout source code
         uses: actions/checkout@v3
         timeout-minutes: 1
