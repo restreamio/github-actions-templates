@@ -134,7 +134,7 @@ jobs:
 
       - name: Upload source maps to DataDog
         if: inputs.upload_source_maps
-        run: npm run datadog-ci -- sourcemaps upload ${{ inputs.build_path }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
+        run: npx datadog-ci@datadog/datadog-ci sourcemaps upload ${{ inputs.build_path }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
         timeout-minutes: 5
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
@@ -143,9 +143,8 @@ jobs:
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 15
         run: |
-          npm run remove-sourcemaps
           cd ${{ inputs.build_path }}
-          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
+          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress --exclude "*.js.map"
 
       - name: Invalidate CloudFront cache
         if: ${{ (inputs.invalidate_cloudfront_cache) && (github.ref == 'refs/heads/master') }}
