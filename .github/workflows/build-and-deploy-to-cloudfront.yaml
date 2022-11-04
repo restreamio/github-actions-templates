@@ -109,8 +109,8 @@ jobs:
           content="${content//$'\r'/'%0D'}"
           echo "packageJson=$(content)" >> $GITHUB_OUTPUT
 
-      - run:
-          echo ${{ fromJson(steps.package_info.outputs.packageJson).version }}
+      - run: |
+          echo "${{ fromJson(steps.package_info.outputs.packageJson).version }}"
 
 
       - name: Install dependencies
