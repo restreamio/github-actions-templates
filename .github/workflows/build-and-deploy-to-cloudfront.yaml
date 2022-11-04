@@ -80,17 +80,17 @@ jobs:
     name: Build and deploy to CloudFront
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
-      ## To make debugging easier in case of issues
-      # - name: Show context
-      #   env:
-      #     GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
-      #     INPUTS_JSON: ${{ toJson(inputs) }}
-      #   run: |
-      #     echo Github context: "$GITHUB_CONTEXT_JSON"
-      #     echo Inputs: "$INPUTS_JSON"
-      # - name: Checkout source code
-      #   uses: actions/checkout@v3
-      #   timeout-minutes: 1
+      # To make debugging easier in case of issues
+      - name: Show context
+        env:
+          GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
+          INPUTS_JSON: ${{ toJson(inputs) }}
+        run: |
+          echo Github context: "$GITHUB_CONTEXT_JSON"
+          echo Inputs: "$INPUTS_JSON"
+      - name: Checkout source code
+        uses: actions/checkout@v3
+        timeout-minutes: 1
 
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -105,6 +105,9 @@ jobs:
         with:
           filename: 'package.json'
           prefix: package
+
+      - name: show outputs
+        run: echo "version is ${{ env.package_version }}"
 
       - name: Install dependencies
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
