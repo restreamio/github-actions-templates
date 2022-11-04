@@ -101,17 +101,13 @@ jobs:
           cache: ${{ inputs.package_manager }}
       
       - name: Get package info
-        id: package_info
-        run: |
-          content=`cat ./package.json`
-          content="${content//'%'/'%25'}"
-          content="${content//$'\n'/'%0A'}"
-          content="${content//$'\r'/'%0D'}"
-          echo "packageJson=$(content)" >> $GITHUB_OUTPUT
+        uses: antifree/json-to-variables@v1.0.1
+        with:
+          filename: 'package.json'
+          prefix: package
 
-      - run: |
-          echo "${{ steps.package_info.outputs.packageJson }}"
-
+      - name: show outputs
+        run: echo "version is ${{ env.package_version }}"
 
       - name: Install dependencies
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
