@@ -93,8 +93,8 @@ jobs:
         run: |
           echo Github context: "$GITHUB_CONTEXT_JSON"
           echo Inputs: "$INPUTS_JSON"
-          echo Package version: "$(npm pkg get version --workspaces=false | sed 's/"//g')"
-          echo "package_version=$(npm pkg get version --workspaces=false | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo Package version: "$(awk -F\" '/"version":/ {print $4}' package.json"
+          echo "package_version=$(awk -F\" '/"version":/ {print $4}' package.json" >> $GITHUB_OUTPUT
 
       - name: Checkout source code
         uses: actions/checkout@v3
