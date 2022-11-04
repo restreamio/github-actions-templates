@@ -110,7 +110,7 @@ jobs:
           echo "packageJson=$(content)" >> $GITHUB_OUTPUT
 
       - run:
-          echo ${{ fromJson(steps.package_info.outputs.packageJson) }}
+          echo ${{ fromJson(steps.package_info.outputs.packageJson).version }}
 
 
       - name: Install dependencies
