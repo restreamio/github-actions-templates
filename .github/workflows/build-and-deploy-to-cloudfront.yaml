@@ -102,7 +102,7 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
           node-version-file: .nvmrc
-          # cache: ${{ inputs.package_manager }}
+          cache: ${{ inputs.package_manager }}
 
       - name: Install dependencies
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
