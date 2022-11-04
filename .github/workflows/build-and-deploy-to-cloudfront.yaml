@@ -107,10 +107,10 @@ jobs:
           content="${content//'%'/'%25'}"
           content="${content//$'\n'/'%0A'}"
           content="${content//$'\r'/'%0D'}"
-          echo "packageJson=($content)" >> $GITHUB_OUTPUT
+          echo "packageJson=$(content)" >> $GITHUB_OUTPUT
 
       - run:
-          echo ${{ fromJson(steps.package_info.outputs.packageJson).version }}
+          echo ${{ fromJson(steps.package_info.outputs.packageJson) }}
 
 
       - name: Install dependencies
@@ -147,7 +147,7 @@ jobs:
           environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
           # We do not use Github integration, hence it will always fail
           set_commits: skip
-          version: ${{ fromJson (steps.package_info.outputs.packageJson).version }}
+          version: ${{ fromJson(steps.package_info.outputs.packageJson).version }}
 
       - name: Upload source maps to DataDog
         if: inputs.upload_source_maps
