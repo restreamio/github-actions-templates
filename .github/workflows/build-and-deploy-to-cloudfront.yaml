@@ -84,6 +84,16 @@ jobs:
     name: Build and deploy to CloudFront
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
+      - name: Show context
+        id: 'setup-context'
+        env:
+          # To make debugging easier in case of issues
+          GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
+          INPUTS_JSON: ${{ toJson(inputs) }}
+        run: |
+          echo Github context: "$GITHUB_CONTEXT_JSON"
+          echo Inputs: "$INPUTS_JSON"
+
       - name: Checkout source code
         uses: actions/checkout@v3
         timeout-minutes: 1
@@ -96,15 +106,9 @@ jobs:
           node-version-file: .nvmrc
           cache: ${{ inputs.package_manager }}
 
-      - name: Setup context
-        id: 'setup-context'
-        env:
-          # To make debugging easier in case of issues
-          GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
-          INPUTS_JSON: ${{ toJson(inputs) }}
+      - name: Get package version
+        id: 'package-version'
         run: |
-          echo Github context: "$GITHUB_CONTEXT_JSON"
-          echo Inputs: "$INPUTS_JSON"
           echo Package version: "$(npm pkg get version --workspaces=false | sed 's/"//g')"
           echo "package_version=$(npm pkg get version --workspaces=false | sed 's/"//g')" >> $GITHUB_OUTPUT
 
