@@ -96,9 +96,6 @@ jobs:
         uses: actions/checkout@v3
         timeout-minutes: 1
 
-      - name: show yarn version
-        run: yarn --version
-
       - name: Setup Node
         uses: actions/setup-node@v3
         timeout-minutes: 5
@@ -110,6 +107,9 @@ jobs:
       - name: Install dependencies
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 10
+
+      - name: show yarn version
+        run: yarn --version
 
       - name: Cache build
         if: inputs.build_cache_path
