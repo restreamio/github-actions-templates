@@ -57,7 +57,7 @@ on:
         required: false
       sentry_release_version:
         type: string
-        default: "1.0.0"
+        default: ""
         required: false
       datadog_release_version:
         type: string
@@ -103,6 +103,20 @@ jobs:
           node-version: ${{ inputs.node_version }}
           node-version-file: .nvmrc
           cache: ${{ inputs.package_manager }}
+      
+      - name: Get package info
+        if: ${{ inputs.sentry_release_version == "" }}
+        id: package_info
+        run: |
+          content=`cat ./package.json`
+          content="${content//'%'/'%25'}"
+          content="${content//$'\n'/'%0A'}"
+          content="${content//$'\r'/'%0D'}"
+          echo "packageJson=($content)" >> $GITHUB_OUTPUT
+
+      - run:
+          echo "${{ fromJson (steps.package_info.outputs.packageJson).version }}"
+
 
       - name: Install dependencies
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
