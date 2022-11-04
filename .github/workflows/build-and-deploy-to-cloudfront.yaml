@@ -55,9 +55,6 @@ on:
         type: string
         default: __project_name__
         required: false
-      sentry_release_version:
-        type: string
-        required: false
       datadog_release_version:
         type: string
         default: "1.0.0"
@@ -104,7 +101,6 @@ jobs:
           cache: ${{ inputs.package_manager }}
       
       - name: Get package info
-        if: ${{ inputs.sentry_release_version == "" }}
         id: package_info
         run: |
           content=`cat ./package.json`
@@ -151,7 +147,7 @@ jobs:
           environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
           # We do not use Github integration, hence it will always fail
           set_commits: skip
-          version: ${{ inputs.sentry_release_version }}
+          version: ${{ fromJson (steps.package_info.outputs.packageJson).version }}
 
       - name: Upload source maps to DataDog
         if: inputs.upload_source_maps
