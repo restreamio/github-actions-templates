@@ -48,17 +48,20 @@ on:
         type: boolean
         default: false
         required: false
+      # If not specified, will use package.json version
+      sentry_release_version:
+        type: string
+        required: false
       sentry_org:
         type: string
         default: restream-io
         required: false
+      # If not specified, Sentry step won't run
       sentry_project:
         type: string
-        default: __project_name__
         required: false
       datadog_release_version:
         type: string
-        default: "1.0.0"
         required: false
       # ======
       # Deploy
@@ -81,14 +84,16 @@ jobs:
     name: Build and deploy to CloudFront
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
-      # To make debugging easier in case of issues
-      - name: Show context
+      - name: Setup context
         env:
+          # To make debugging easier in case of issues
           GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
           INPUTS_JSON: ${{ toJson(inputs) }}
         run: |
           echo Github context: "$GITHUB_CONTEXT_JSON"
           echo Inputs: "$INPUTS_JSON"
+          echo "PACKAGE_VERSION=$(npm pkg get version --workspaces=false | sed 's/"//g')" >> $GITHUB_ENV
+          echo Package version: "$PACKAGE_VERSION"
 
       - name: Checkout source code
         uses: actions/checkout@v3
@@ -101,12 +106,6 @@ jobs:
           node-version: ${{ inputs.node_version }}
           node-version-file: .nvmrc
           cache: ${{ inputs.package_manager }}
-
-      - name: Get package info
-        uses: antifree/json-to-variables@v1.0.1
-        with:
-          filename: 'package.json'
-          prefix: package
 
       - name: Install dependencies
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
@@ -131,7 +130,7 @@ jobs:
           NODE_OPTIONS: ${{ inputs.node_options }}
 
       - name: Upload source maps to Sentry
-        if: inputs.upload_source_maps
+        if: inputs.upload_source_maps && inputs.sentry_project
         uses: getsentry/action-release@v1.2.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
@@ -142,11 +141,15 @@ jobs:
           environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
           # We do not use Github integration, hence it will always fail
           set_commits: skip
-          version: ${{ env.package_version }}
+          version: ${{ inputs.sentry_release_version && inputs.sentry_release_version || env.PACKAGE_VERSION }}
 
       - name: Upload source maps to DataDog
         if: inputs.upload_source_maps
-        run: npx @datadog/datadog-ci sourcemaps upload ${{ inputs.build_path }} --service=${{ github.event.repository.name }} --release-version=${{ inputs.datadog_release_version }} --minified-path-prefix=/
+        run: |
+          npx @datadog/datadog-ci sourcemaps upload ${{ inputs.build_path }} \
+            --service=${{ github.event.repository.name }} \
+            --release-version=${{ inputs.datadog_release_version && inputs.datadog_release_version || env.PACKAGE_VERSION }} \
+            --minified-path-prefix=/
         timeout-minutes: 5
         env:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
