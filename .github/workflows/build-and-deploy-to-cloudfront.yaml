@@ -85,7 +85,6 @@ jobs:
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
       - name: Show context
-        id: 'setup-context'
         env:
           # To make debugging easier in case of issues
           GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
@@ -107,7 +106,7 @@ jobs:
           cache: ${{ inputs.package_manager }}
 
       - name: Get package version
-        id: 'package-version'
+        id: 'get_package_version'
         run: |
           echo Package version: "$(npm pkg get version --workspaces=false | sed 's/"//g')"
           echo "package_version=$(npm pkg get version --workspaces=false | sed 's/"//g')" >> $GITHUB_OUTPUT
@@ -146,14 +145,14 @@ jobs:
           environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
           # We do not use Github integration, hence it will always fail
           set_commits: skip
-          version: ${{ inputs.sentry_release_version && inputs.sentry_release_version || steps.setup-context.outputs.package_version }}
+          version: ${{ inputs.sentry_release_version && inputs.sentry_release_version || steps.get_package_version.outputs.package_version }}
 
       - name: Upload source maps to DataDog
         if: inputs.upload_source_maps
         run: |
           npx @datadog/datadog-ci sourcemaps upload ${{ inputs.build_path }} \
             --service=${{ github.event.repository.name }} \
-            --release-version=${{ inputs.datadog_release_version && inputs.datadog_release_version || steps.setup-context.outputs.package_version }} \
+            --release-version=${{ inputs.datadog_release_version && inputs.datadog_release_version || steps.get_package_version.outputs.package_version }} \
             --minified-path-prefix=/
         timeout-minutes: 5
         env:
