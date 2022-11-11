@@ -1,90 +1,172 @@
-name: Build and Deploy to Cloudfront
+---
+name: Build and deploy to CloudFront
+
+concurrency:
+  group: ${{ github.event.repository.name }}-build-n-deploy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 on:
   workflow_call:
     inputs:
-      build_instance_type:
+      # =====
+      # Setup
+      # =====
+      instance_type:
         type: string
-        default: "xlarge"
+        default: xlarge
         required: false
+      node_version:
+        type: string
+        # If set to '' version will be extracted from .nvmrc file
+        default: "16"
+        required: false
+      node_options:
+        type: string
+        required: false
+      package_manager:
+        type: string
+        default: yarn
+        required: false
+      # =====
+      # Build
+      # =====
+      build_command:
+        type: string
+        default: yarn build
+        required: false
+      build_cache_path:
+        type: string
+        required: false
+      build_path:
+        type: string
+        default: ./dist
+        required: false
+      # ===========
+      # Source maps
+      # ===========
+      upload_source_maps:
+        type: boolean
+        default: false
+        required: false
+      # If not specified, will use package.json version
+      sentry_release_version:
+        type: string
+        required: false
+      sentry_org:
+        type: string
+        default: restream-io
+        required: false
+      # If not specified, Sentry step won't run
+      sentry_project:
+        type: string
+        required: false
+      datadog_release_version:
+        type: string
+        required: false
+      # ======
+      # Deploy
+      # ======
       s3_bucket_name:
         type: string
         required: true
-      node_version:
-        type: string
-        default: "16"
+      invalidate_cloudfront_cache:
+        type: boolean
+        default: true
         required: false
-      cache_lock_file:
-        type: string
-        default: "**/yarn.lock"
+    secrets:
+      sentry_auth_token:
         required: false
-      release_dir:
-        type: string
-        default: "./dist"
+      datadog_api_key:
         required: false
 
 jobs:
   build:
-    name: Build and upload to cloudfront
-    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
+    name: Build and deploy to CloudFront
+    runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
     steps:
+      - name: Show context
+        env:
+          # To make debugging easier in case of issues
+          GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
+          INPUTS_JSON: ${{ toJson(inputs) }}
+        run: |
+          echo Github context: "$GITHUB_CONTEXT_JSON"
+          echo Inputs: "$INPUTS_JSON"
+
       - name: Checkout source code
         uses: actions/checkout@v3
         timeout-minutes: 1
 
-      - name: Setup NodeJs and npm
+      - name: Setup Node
         uses: actions/setup-node@v3
         timeout-minutes: 5
         with:
-          node-version: ${{ inputs.node_version}}
+          node-version: ${{ inputs.node_version }}
+          node-version-file: .nvmrc
+          cache: ${{ inputs.package_manager }}
 
-      - name: Setup yarn
-        run: npm install -g yarn
-        timeout-minutes: 5
-
-      - name: Get commit details
-        id: github-commit-details
+      - name: Get package version
+        id: 'get_package_version'
         run: |
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "date=$(date +'%y.%m.%d%H%M')" >> $GITHUB_OUTPUT
-          echo "branch=$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')" >> $GITHUB_OUTPUT
-          echo "contributor=$(git log -1 --pretty=format:'%an' |  tr -d '\n')" >> $GITHUB_OUTPUT
-          echo "commit_hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-        timeout-minutes: 1
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
-        timeout-minutes: 1
-
-      - name: Restore node_modules cache
-        uses: actions/cache@v3
-        id: yarn-cache
-        timeout-minutes: 10
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ github.event.repository.name }}-yarn-${{ hashFiles( inputs.cache_lock_file ) }}
-          restore-keys: |
-            ${{ github.event.repository.name }}-yarn-
+          echo Package version: "$(npm pkg get version --workspaces=false | sed 's/"//g')"
+          echo "package_version=$(npm pkg get version --workspaces=false | sed 's/"//g')" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 10
 
-      - name: Build source code
-        run: yarn build
+      - name: Cache build
+        if: inputs.build_cache_path
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: ${{ inputs.build_cache_path }}
+          key: build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-${{ github.ref }}
+          restore-keys: |
+            build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+            build-cache-
+
+      - name: Build
+        run: ${{ inputs.build_command }}
         timeout-minutes: 15
         env:
-          COMMIT_HASH: ${{ steps.github-commit-details.outputs.commit_hash }}
+          COMMIT_HASH: ${{ github.sha }}
+          NODE_OPTIONS: ${{ inputs.node_options }}
 
-      - name: Deploy CloudFront
+      - name: Upload source maps to Sentry
+        if: inputs.upload_source_maps && inputs.sentry_project
+        uses: getsentry/action-release@v1.2.0
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
+          SENTRY_ORG: ${{ inputs.sentry_org }}
+          SENTRY_PROJECT: ${{ inputs.sentry_project }}
+        timeout-minutes: 5
+        with:
+          environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
+          # We do not use Github integration, hence it will always fail
+          set_commits: skip
+          version: ${{ inputs.sentry_release_version && inputs.sentry_release_version || steps.get_package_version.outputs.package_version }}
+
+      - name: Upload source maps to DataDog
+        if: inputs.upload_source_maps
+        run: |
+          npx @datadog/datadog-ci sourcemaps upload ${{ inputs.build_path }} \
+            --service=${{ github.event.repository.name }} \
+            --release-version=${{ inputs.datadog_release_version && inputs.datadog_release_version || steps.get_package_version.outputs.package_version }} \
+            --minified-path-prefix=/
+        timeout-minutes: 5
+        env:
+          DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
+
+      - name: Deploy to CloudFront
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 15
         run: |
-          cd ${{ inputs.release_dir }}
-          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress
+          cd ${{ inputs.build_path }}
+          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}" --recursive --no-progress --exclude "*.js.map"
 
-      - name: Invalidation Cloudfront cache
-        if: github.ref == 'refs/heads/master'
+      - name: Invalidate CloudFront cache
+        if: ${{ (inputs.invalidate_cloudfront_cache) && (github.ref == 'refs/heads/master') }}
         timeout-minutes: 5
         env:
           ORIGIN: ${{ inputs.s3_bucket_name }}.s3.amazonaws.com
