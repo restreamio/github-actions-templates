@@ -135,7 +135,7 @@ jobs:
 
       - name: Upload source maps to Sentry
         if: inputs.upload_source_maps && inputs.sentry_project
-        uses: getsentry/action-release@v1.2.0
+        uses: getsentry/action-release@v1.2.1
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
           SENTRY_ORG: ${{ inputs.sentry_org }}
