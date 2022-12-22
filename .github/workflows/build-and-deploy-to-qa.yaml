@@ -76,9 +76,9 @@ jobs:
     timeout-minutes: 1
     steps:
       - name: Leave comment with domain name
-        uses: peter-evans/commit-comment@v2
+        uses: mshick/add-pr-comment@v1
         with:
-          body: |
+          message: |
             Build will be available here: [https://${{ inputs.argocd_app_fqdn }}](https://${{ inputs.argocd_app_fqdn }})
 
   build:
