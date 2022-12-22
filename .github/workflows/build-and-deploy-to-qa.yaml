@@ -77,6 +77,8 @@ jobs:
     steps:
       - name: Leave comment with domain name
         uses: mshick/add-pr-comment@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           message: |
             Build will be available here: [https://${{ inputs.argocd_app_fqdn }}](https://${{ inputs.argocd_app_fqdn }})
