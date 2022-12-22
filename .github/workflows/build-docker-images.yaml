@@ -227,7 +227,7 @@ jobs:
     steps:
       - name: Leave comment with created image
         if: github.ref == 'refs/heads/master'
-        uses: restreamio/github-action-commit-comment@latest
+        uses: peter-evans/commit-comment@v2
         timeout-minutes: 1
         env:
           IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}

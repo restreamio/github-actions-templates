@@ -76,7 +76,7 @@ jobs:
     timeout-minutes: 1
     steps:
       - name: Leave comment with domain name
-        uses: restreamio/github-action-commit-comment@latest
+        uses: peter-evans/commit-comment@v2
         with:
           body: |
             Build will be available here: [https://${{ inputs.argocd_app_fqdn }}](https://${{ inputs.argocd_app_fqdn }})
