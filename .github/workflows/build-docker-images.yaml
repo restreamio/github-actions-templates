@@ -96,17 +96,6 @@ jobs:
         timeout-minutes: 1
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Restore docker cached layers if exists
-        id: cache-docker
-        uses: actions/cache@v3
-        if: github.event_name == 'pull_request' && inputs.pr_open == 'true'
-        timeout-minutes: 1
-        with:
-          path: /tmp/.buildx-cache
-          restore-keys: |
-            ${{ runner.os }}-buildx-${{ github.sha }}
-            ${{ runner.os }}-buildx-
-
       - name: Build, tag and push image to US
         uses: docker/build-push-action@v3
         timeout-minutes: 30
@@ -123,6 +112,8 @@ jobs:
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_args }}
+          args:
+            --cache-from: type=gha
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
@@ -134,8 +125,8 @@ jobs:
             com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
             com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_labels }}
-          cache-from: type=gha, src=/tmp/.buildx-cache
-          cache-to: type=gha,mode=max, dest=/tmp/.buildx-cache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build, tag and push image to EU
         uses: docker/build-push-action@v3
@@ -154,6 +145,8 @@ jobs:
           build-args: |
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_args }}
+          args:
+            --cache-from type=gha
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
@@ -165,8 +158,8 @@ jobs:
             com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
             com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_labels }}
-          cache-from: type=gha, src=/tmp/.buildx-cache
-          cache-to: type=gha,mode=max, dest=/tmp/.buildx-cache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Tag latest for master branch in US
         uses: docker/build-push-action@v3
@@ -268,13 +261,6 @@ jobs:
           git clone "https://$GIT_TOKEN@github.com/restreamio/${{ inputs.pr_repos }}.git"
           cd ${{ inputs.pr_repos }}
           ${{ inputs.pr_command }}
-
-      - name: Save docker layered caches
-        uses: actions/cache@v3
-        timeout-minutes: 1
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
