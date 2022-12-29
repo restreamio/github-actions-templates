@@ -113,7 +113,7 @@ jobs:
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_args }}
           args:
-            --cache-from: type=gha
+            "--cache-from: type=gha"
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
           labels: |
