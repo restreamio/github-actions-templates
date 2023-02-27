@@ -106,6 +106,8 @@ jobs:
           cache: ${{ inputs.package_manager }}
 
       - name: Get package version
+        # Version needed only for source maps, so disable it if project doesn't post them to Sentry or DataDog
+        if: inputs.upload_source_maps
         id: 'get_package_version'
         run: |
           echo Package version: "$(npm pkg get version --workspaces=false | sed 's/"//g')"
