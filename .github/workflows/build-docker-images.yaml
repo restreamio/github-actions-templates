@@ -78,6 +78,9 @@ jobs:
           echo "contributor=$(git log -1 --pretty=format:'%an' |  tr -d '\n')" >> $GITHUB_OUTPUT
         timeout-minutes: 1
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         timeout-minutes: 1
@@ -106,6 +109,7 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
+          platforms: linux/amd64,linux/arm64
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -137,6 +141,7 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
+          platforms: linux/amd64,linux/arm64
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -168,6 +173,7 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
+          platforms: linux/amd64,linux/arm64
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -200,6 +206,7 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
+          platforms: linux/amd64,linux/arm64
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
