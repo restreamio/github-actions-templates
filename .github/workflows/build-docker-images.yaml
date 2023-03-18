@@ -78,9 +78,6 @@ jobs:
           echo "contributor=$(git log -1 --pretty=format:'%an' |  tr -d '\n')" >> $GITHUB_OUTPUT
         timeout-minutes: 1
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         timeout-minutes: 1
@@ -109,7 +106,6 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
-          platforms: linux/amd64,linux/arm64
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -141,7 +137,6 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
-          platforms: linux/amd64,linux/arm64
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -173,7 +168,6 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
-          platforms: linux/amd64,linux/arm64
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -206,7 +200,173 @@ jobs:
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
-          platforms: linux/amd64,linux/arm64
+          context: ${{ matrix.docker_context }}
+          file: ${{ matrix.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_args }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-arm:
+    name: Build ${{ matrix.container }}
+    runs-on: ["self-hosted", "xlarge-arm", "prod"]
+    outputs:
+      date: ${{ steps.github-commit-details.outputs.date }}
+      sha_short: ${{ steps.github-commit-details.outputs.sha_short }}
+      branch: ${{ steps.github-commit-details.outputs.branch }}
+      contributor: ${{ steps.github-commit-details.outputs.contributor }}
+    strategy:
+      matrix:
+        include: ${{ fromJSON(inputs.build_images) }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+        timeout-minutes: 1
+
+      - name: Get commit details
+        id: github-commit-details
+        run: |
+          echo "date=$(git show -s --date=format:'%y.%m.%d%H%M' --format=%cd)" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "branch=$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')" >> $GITHUB_OUTPUT
+          echo "contributor=$(git log -1 --pretty=format:'%an' |  tr -d '\n')" >> $GITHUB_OUTPUT
+        timeout-minutes: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        timeout-minutes: 1
+
+      - name: Login to Amazon US ECR
+        id: login-ecr
+        env:
+          AWS_REGION: ${{ inputs.ecr_region }}
+        timeout-minutes: 1
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Login to Amazon EU ECR
+        id: login-ecr-eu
+        env:
+          AWS_REGION: ${{ inputs.ecr_region_eu }}
+        timeout-minutes: 1
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag and push image to US
+        uses: docker/build-push-action@v4
+        timeout-minutes: 30
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ matrix.docker_context }}
+          file: ${{ matrix.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_args }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build, tag and push image to EU
+        uses: docker/build-push-action@v4
+        timeout-minutes: 30
+        continue-on-error: true
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ matrix.docker_context }}
+          file: ${{ matrix.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_args }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Tag latest for master branch in US
+        uses: docker/build-push-action@v4
+        if: github.ref == 'refs/heads/master'
+        timeout-minutes: 30
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: ${{ matrix.docker_context }}
+          file: ${{ matrix.docker_file }}
+          push: true
+          build-args: |
+            BUILD_NUMBER=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_args }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
+          labels: |
+            app.version=${{ env.IMAGE_TAG }}
+            description=Restream ${{ env.ECR_REPOSITORY_NAME }} service
+            git.branch=${{ steps.github-commit-details.outputs.branch }}
+            git.commit=${{ steps.github-commit-details.outputs.sha_short }}
+            git.contributor=${{ steps.github-commit-details.outputs.contributor }}
+            com.datadoghq.tags.service=${{ env.ECR_REPOSITORY_NAME }}
+            com.datadoghq.tags.version=${{ env.IMAGE_TAG }}
+            ${{ inputs.docker_additional_labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Tag latest for master branch in EU
+        uses: docker/build-push-action@v4
+        if: github.ref == 'refs/heads/master'
+        timeout-minutes: 30
+        continue-on-error: true
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
+          ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
+          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
+        with:
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
