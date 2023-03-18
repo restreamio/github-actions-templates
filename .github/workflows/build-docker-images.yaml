@@ -107,6 +107,7 @@ jobs:
           BUILDKIT_PROGRESS: plain
         with:
           platforms: linux/amd64
+          provenance: false
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -140,6 +141,7 @@ jobs:
           BUILDKIT_PROGRESS: plain
         with:
           platforms: linux/amd64
+          provenance: false
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -173,6 +175,7 @@ jobs:
           BUILDKIT_PROGRESS: plain
         with:
           platforms: linux/amd64
+          provenance: false
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -207,6 +210,7 @@ jobs:
           BUILDKIT_PROGRESS: plain
         with:
           platforms: linux/amd64
+          provenance: false
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -282,6 +286,7 @@ jobs:
           BUILDKIT_PROGRESS: plain
         with:
           platforms: linux/arm64
+          provenance: false
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -315,6 +320,7 @@ jobs:
           BUILDKIT_PROGRESS: plain
         with:
           platforms: linux/arm64
+          provenance: false
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -348,6 +354,7 @@ jobs:
           BUILDKIT_PROGRESS: plain
         with:
           platforms: linux/arm64
+          provenance: false
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
@@ -382,6 +389,7 @@ jobs:
           BUILDKIT_PROGRESS: plain
         with:
           platforms: linux/arm64
+          provenance: false
           context: ${{ matrix.docker_context }}
           file: ${{ matrix.docker_file }}
           push: true
