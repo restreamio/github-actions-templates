@@ -26,7 +26,7 @@ on:
           ]
       build_multiarch:
         type: boolean
-        default: true
+        default: false
         required: false
       pr_open:
         type: boolean
@@ -428,7 +428,7 @@ jobs:
         uses: peter-evans/commit-comment@v2
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build-amd64.outputs.date }}-${{ needs.build-amd64.outputs.sha_short }}
         with:
           body: |
             Image has been built: `${{ env.IMAGE_TAG }}`
@@ -437,7 +437,7 @@ jobs:
         uses: restreamio/github-status-action@v1.1.6
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build-amd64.outputs.date }}-${{ needs.build-amd64.outputs.sha_short }}
         with:
           authToken: ${{ secrets.GITHUB_TOKEN }}
           context: "${{ github.workflow }} / CI / Image tag"
@@ -445,11 +445,23 @@ jobs:
           state: "success"
           sha: ${{github.event.pull_request.head.sha || github.sha}}
 
+      - name: Print build image done in status check summary
+        uses: restreamio/github-status-action@v1.1.6
+        timeout-minutes: 1
+        env:
+          IMAGE_TAG: ${{ needs.build-amd64.outputs.date }}-${{ needs.build-amd64.outputs.sha_short }}
+        with:
+          authToken: ${{ secrets.GITHUB_TOKEN }}
+          context: "${{ github.workflow }} / CI / Build image"
+          description: "Successful"
+          state: "success"
+          sha: ${{github.event.pull_request.head.sha || github.sha}}
+
       - name: Create git commits
         if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build-amd64.outputs.date }}-${{ needs.build-amd64.outputs.sha_short }}
           GIT_TOKEN: ${{ secrets.gh_token }}
         run: |-
           git clone "https://$GIT_TOKEN@github.com/restreamio/${{ inputs.pr_repos }}.git"
@@ -461,7 +473,7 @@ jobs:
         if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build-amd64.outputs.date }}-${{ needs.build-amd64.outputs.sha_short }}
           AUTHOR_NAME: restream-ci-bot
         with:
           branch: "bump-${{ github.event.repository.name }}"
