@@ -24,9 +24,13 @@ on:
                "ecr_repository_name": "${{ github.event.repository.name }}"
              }
           ]
-      pr_open:
+      build_multiarch:
         type: boolean
         default: true
+        required: false
+      pr_open:
+        type: boolean
+        default: false
         required: false
       docker_additional_labels:
         type: string
@@ -53,9 +57,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build ${{ matrix.container }}
-    runs-on: ["self-hosted", "${{ matrix.runner_type }}", "prod"]
+  build-amd64:
+    name: Build amd64 ${{ matrix.container }}
+    runs-on: ["self-hosted", "${{ matrix.runner_type }}", "prod", "amd64"]
     outputs:
       date: ${{ steps.github-commit-details.outputs.date }}
       sha_short: ${{ steps.github-commit-details.outputs.sha_short }}
@@ -232,9 +236,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-arm:
-    name: Build ${{ matrix.container }}
+  build-arm64:
+    name: Build arm64 ${{ matrix.container }}
     runs-on: ["self-hosted", "xlarge-arm", "prod"]
+    if: inputs.build_multiarch
     outputs:
       date: ${{ steps.github-commit-details.outputs.date }}
       sha_short: ${{ steps.github-commit-details.outputs.sha_short }}
@@ -413,7 +418,9 @@ jobs:
 
   pr:
     name: Open pull request
-    needs: [build, build-arm]
+    needs:
+      - build-amd64
+      - build-arm64
     runs-on: ["self-hosted", "xsmall", "prod"]
     steps:
       - name: Leave comment with created image
