@@ -26,7 +26,7 @@ on:
           ]
       build_multiarch:
         type: boolean
-        default: false
+        default: true
         required: false
       pr_open:
         type: boolean
