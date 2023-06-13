@@ -157,7 +157,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Tag latest for master branch in US
+      - name: Tag prod and latest for master branch in US
         uses: docker/build-push-action@v4
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 30
@@ -175,6 +175,7 @@ jobs:
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_args }}
           tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:prod-${{ env.IMAGE_TAG }}
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
           labels: |
             app.version=${{ env.IMAGE_TAG }}
@@ -188,7 +189,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Tag latest for master branch in EU
+      - name: Tag prod and latest for master branch in EU
         uses: docker/build-push-action@v4
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 30
@@ -207,6 +208,7 @@ jobs:
             BUILD_NUMBER=${{ env.IMAGE_TAG }}
             ${{ inputs.docker_additional_args }}
           tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:prod-${{ env.IMAGE_TAG }}
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:latest
           labels: |
             app.version=${{ env.IMAGE_TAG }}
