@@ -241,7 +241,7 @@ jobs:
         uses: restreamio/github-status-action@v1.1.6
         timeout-minutes: 1
         env:
-          IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
+          IMAGE_TAG: ${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
         with:
           authToken: ${{ secrets.GITHUB_TOKEN }}
           context: "${{ github.workflow }} / CI / Image tag"
