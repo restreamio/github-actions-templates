@@ -243,16 +243,16 @@ jobs:
         id: set_image_tag
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "::set-output name=image_tag::${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}"
+            echo "summary_image_tag=${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
-            echo "::set-output name=image_tag::prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}"
+            echo "summary_image_tag=prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Print image tag in status check summary
         uses: restreamio/github-status-action@v1.1.6
         timeout-minutes: 1
         env:
-          IMAGE_TAG: ${{ steps.set_image_tag.outputs.image_tag }}
+          IMAGE_TAG: ${{ steps.set_image_tag.outputs.summary_image_tag }}
         with:
           authToken: ${{ secrets.GITHUB_TOKEN }}
           context: "${{ github.workflow }} / CI / Image tag"
