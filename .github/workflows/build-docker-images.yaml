@@ -51,6 +51,8 @@ on:
     secrets:
       gh_token:
         required: true
+      npm_token:
+        required: false     
 
 concurrency:
   group: ${{ github.event.repository.name }}-build-${{ github.event.pull_request.number }}
