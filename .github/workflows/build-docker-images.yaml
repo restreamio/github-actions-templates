@@ -28,6 +28,10 @@ on:
         type: boolean
         default: true
         required: false
+      pr_override:
+        type: boolean
+        default: false
+        required: false
       docker_additional_labels:
         type: string
         default: ""
@@ -261,7 +265,7 @@ jobs:
           sha: ${{github.event.pull_request.head.sha || github.sha}}
 
       - name: Create git commits
-        if: github.ref == 'refs/heads/master' && inputs.pr_open
+        if: ${{ (github.ref == 'refs/heads/master' && inputs.pr_open) || inputs.pr_override }}
         timeout-minutes: 1
         env:
           IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
@@ -273,7 +277,7 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
-        if: github.ref == 'refs/heads/master' && inputs.pr_open
+        if: ${{ (github.ref == 'refs/heads/master' && inputs.pr_open) || inputs.pr_override }}
         timeout-minutes: 1
         env:
           IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
