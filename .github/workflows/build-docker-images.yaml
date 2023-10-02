@@ -52,7 +52,7 @@ on:
       gh_token:
         required: true
       npm_token:
-        required: false     
+        required: false
 
 concurrency:
   group: ${{ github.event.repository.name }}-build-${{ github.event.pull_request.number }}
