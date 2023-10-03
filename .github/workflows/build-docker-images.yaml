@@ -167,7 +167,7 @@ jobs:
 
       - name: Tag prod and latest for master branch in US
         uses: docker/build-push-action@v5
-        if: github.ref == 'refs/heads/master'
+        if: $${{ (github.ref == 'refs/heads/master') || inputs.pr_override }}
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -199,7 +199,7 @@ jobs:
 
       - name: Tag prod and latest for master branch in EU
         uses: docker/build-push-action@v5
-        if: github.ref == 'refs/heads/master'
+        if: $${{ (github.ref == 'refs/heads/master') || inputs.pr_override }}
         timeout-minutes: 30
         continue-on-error: true
         env:
