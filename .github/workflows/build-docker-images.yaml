@@ -24,6 +24,10 @@ on:
                "ecr_repository_name": "${{ github.event.repository.name }}"
              }
           ]
+      image_tag_override:
+        type: string
+        default: ""
+        required: false
       pr_open:
         type: boolean
         default: true
@@ -96,6 +100,16 @@ jobs:
         timeout-minutes: 1
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Set IMAGE_TAG with override if set
+        id: set_image_tag
+        run: |
+          if [[ -z "${{ inputs.image_tag_override }}" ]]; then
+            echo "IMAGE_TAG=${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}" >> $GITHUB_OUTPUT
+          else
+            echo "IMAGE_TAG=${{ inputs.image_tag_override }}" >> $GITHUB_OUTPUT
+          fi
+        timeout-minutes: 1
+
       - name: Build, tag and push image to US
         uses: docker/build-push-action@v5
         if: github.ref != 'refs/heads/master'
@@ -103,7 +117,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
-          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          IMAGE_TAG: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
@@ -135,7 +149,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
-          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          IMAGE_TAG: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
@@ -166,7 +180,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
-          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          IMAGE_TAG: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
@@ -199,7 +213,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
-          IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
+          IMAGE_TAG: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
           DOCKER_BUILDKIT: 1
           BUILDKIT_PROGRESS: plain
         with:
