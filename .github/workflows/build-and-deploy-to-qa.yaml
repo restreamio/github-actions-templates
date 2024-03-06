@@ -96,7 +96,7 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        timeout-minutes: 2
+        timeout-minutes: 5
 
       - name: Get commit details
         id: github-commit-details
@@ -112,14 +112,14 @@ jobs:
         env:
           AWS_REGION: ${{ inputs.ecr_region }}
         timeout-minutes: 1
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Login to Amazon EU ECR
         id: login-ecr-eu
         env:
           AWS_REGION: ${{ inputs.ecr_region_eu }}
         timeout-minutes: 1
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag and push image
         uses: docker/build-push-action@v5
