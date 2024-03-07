@@ -120,7 +120,7 @@ jobs:
       - name: Cache build
         if: inputs.build_cache_path
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ inputs.build_cache_path }}
           key: build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-${{ github.ref }}
@@ -137,7 +137,7 @@ jobs:
 
       - name: Upload source maps to Sentry
         if: inputs.upload_source_maps && inputs.sentry_project
-        uses: getsentry/action-release@v1.4.1
+        uses: getsentry/action-release@v1.7.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
           SENTRY_ORG: ${{ inputs.sentry_org }}
