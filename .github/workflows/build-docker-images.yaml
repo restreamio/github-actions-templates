@@ -44,6 +44,10 @@ on:
         type: string
         default: 'yq e ''(.spec.source.helm.parameters[] | select(.name == "image.tag")).value = env(IMAGE_TAG)'' -i ''kustomize/argocd/apps/${{ github.event.repository.name }}.yaml'''
         required: false
+      create_npmrc:
+        type: boolean
+        default: false
+        required: false
     secrets:
       gh_token:
         required: true
@@ -95,6 +99,22 @@ jobs:
           AWS_REGION: ${{ inputs.ecr_region_eu }}
         timeout-minutes: 1
         uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Create .npmrc file
+        if: inputs.create_npmrc
+        run: |
+          NPM_TOKEN=${{ secrets.NPM_TOKEN_AUTOMATION }}
+          NPMRC_FILE=".npmrc"
+          if [ ! -f "$NPMRC_FILE" ]; then
+            echo "Creating $NPMRC_FILE with token"
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$NPMRC_FILE"
+          elif ! grep -q "//registry.npmjs.org/:_authToken=" "$NPMRC_FILE"; then
+            echo "Appending token to $NPMRC_FILE"
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> "$NPMRC_FILE"
+          else
+            echo "Replacing token in $NPMRC_FILE"
+            sed -i '' "s#//registry.npmjs.org/:_authToken=.*#//registry.npmjs.org/:_authToken=${NPM_TOKEN}#" "$NPMRC_FILE"
+          fi
 
       - name: Build, tag and push image to US
         uses: docker/build-push-action@v5
