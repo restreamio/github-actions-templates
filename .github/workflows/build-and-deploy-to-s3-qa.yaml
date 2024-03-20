@@ -1,5 +1,5 @@
 ---
-name: Build and deploy to S3
+name: Build and deploy to S3 QA
 
 concurrency:
   group: ${{ github.event.repository.name }}-build-n-deploy-s3-${{ github.event.pull_request.number }}
