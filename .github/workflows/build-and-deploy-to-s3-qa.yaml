@@ -41,21 +41,6 @@ on:
         type: string
         default: ./dist
         required: false
-      # ===========
-      # Source maps
-      # ===========
-      upload_source_maps:
-        type: boolean
-        default: false
-        required: false
-      # If not specified, will use package.json version
-      sentry_release_version:
-        type: string
-        required: false
-      sentry_org:
-        type: string
-        default: restream-io
-        required: false
       # ======
       # Deploy
       # ======
