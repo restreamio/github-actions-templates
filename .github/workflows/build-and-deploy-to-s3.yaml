@@ -1,8 +1,8 @@
 ---
-name: Build and deploy to CloudFront
+name: Build and deploy to S3
 
 concurrency:
-  group: ${{ github.event.repository.name }}-build-n-deploy-${{ github.event.pull_request.number }}
+  group: ${{ github.event.repository.name }}-build-n-deploy-s3-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 on:
@@ -56,33 +56,18 @@ on:
         type: string
         default: restream-io
         required: false
-      # If not specified, Sentry step won't run
-      sentry_project:
-        type: string
-        required: false
-      datadog_release_version:
-        type: string
-        required: false
       # ======
       # Deploy
       # ======
       s3_bucket_name:
         type: string
         required: true
-      invalidate_cloudfront_cache:
-        type: boolean
-        default: true
-        required: false
-    secrets:
-      sentry_auth_token:
-        required: false
-      datadog_api_key:
-        required: false
 
 jobs:
   build:
-    name: Build and deploy to CloudFront
+    name: Build and deploy to S3
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
+    if: (github.event_name == 'pull_request' && github.event.action == 'push')
     steps:
       - name: Show context
         env:
@@ -104,14 +89,6 @@ jobs:
           node-version: ${{ inputs.node_version }}
           node-version-file: .nvmrc
           cache: ${{ inputs.package_manager }}
-
-      - name: Get package version
-        # Version needed only for source maps, so disable it if project doesn't post them to Sentry or DataDog
-        if: inputs.upload_source_maps
-        id: 'get_package_version'
-        run: |
-          echo Package version: "$(npm pkg get version --workspaces=false | sed 's/"//g')"
-          echo "package_version=$(npm pkg get version --workspaces=false | sed 's/"//g')" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
@@ -135,54 +112,23 @@ jobs:
           COMMIT_HASH: ${{ github.sha }}
           NODE_OPTIONS: ${{ inputs.node_options }}
 
-      - name: Upload source maps to Sentry
-        if: inputs.upload_source_maps && inputs.sentry_project
-        uses: getsentry/action-release@v1.7.0
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
-          SENTRY_ORG: ${{ inputs.sentry_org }}
-          SENTRY_PROJECT: ${{ inputs.sentry_project }}
-        timeout-minutes: 5
-        with:
-          environment: ${{ (github.ref == 'refs/heads/master') && 'production' || 'staging' }}
-          # We do not use Github integration, hence it will always fail
-          set_commits: skip
-          version: ${{ inputs.sentry_release_version && inputs.sentry_release_version || steps.get_package_version.outputs.package_version }}
-
-      - name: Upload source maps to DataDog
-        if: inputs.upload_source_maps
-        run: |
-          npx @datadog/datadog-ci sourcemaps upload ${{ inputs.build_path }} \
-            --service=${{ github.event.repository.name }} \
-            --release-version=${{ inputs.datadog_release_version && inputs.datadog_release_version || steps.get_package_version.outputs.package_version }} \
-            --minified-path-prefix=/
-        timeout-minutes: 5
-        env:
-          DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
-
-      - name: Deploy to CloudFront
+      - name: Deploy to S3
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 15
         run: |
           cd ${{ inputs.build_path }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }}" --recursive --no-progress --exclude "*.js.map"
+          cd ../src/public
+          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }}" --recursive --no-progress --exclude "*.js.map"
 
-      - name: Invalidate CloudFront cache
-        if: ${{ (inputs.invalidate_cloudfront_cache) && (github.ref == 'refs/heads/master') }}
-        timeout-minutes: 5
-        env:
-          ORIGIN: ${{ inputs.s3_bucket_name }}.s3.amazonaws.com
-        run: |
-          echo "DISTRIBUTIONS=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?origin=='${{ env.ORIGIN }}'].id" \
-            --output text \
-          )" >> $GITHUB_ENV
 
-          for id in $DISTRIBUTIONS; do
-            aws cloudfront create-invalidation --distribution-id $id --paths "/*"
-          done
 
-      - name: Delete cloudfront directory on PR close
-        if: (github.event_name == 'pull_request' && github.event.action == 'closed') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+
+  cleanup:
+    name: Cleanup
+    runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
+    if: (github.event_name == 'pull_request' && github.event.action == 'closed') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    steps:
+      - name: Delete S3 directory on PR close
         run: |
           aws s3 rm s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }} --recursive
