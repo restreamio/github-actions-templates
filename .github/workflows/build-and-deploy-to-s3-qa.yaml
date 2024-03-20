@@ -121,9 +121,6 @@ jobs:
           cd ../src/public
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }}" --recursive --no-progress --exclude "*.js.map"
 
-
-
-
   cleanup:
     name: Cleanup
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
