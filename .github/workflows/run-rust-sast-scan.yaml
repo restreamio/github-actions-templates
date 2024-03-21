@@ -1,0 +1,90 @@
+name: Build Docker Image
+on:
+  workflow_call:
+    inputs:
+      ecr_region:
+        type: string
+        default: "us-east-1"
+        required: false
+      ecr_region_eu:
+        type: string
+        default: "eu-central-1"
+        required: false
+      pr_open:
+        type: boolean
+        default: true
+        required: false
+      docker_additional_labels:
+        type: string
+        default: ""
+        required: false
+      docker_additional_args:
+        type: string
+        default: ""
+        required: false
+      pr_repos:
+        type: string
+        default: "k8s"
+        required: false
+      pr_command:
+        type: string
+        default: 'yq e ''(.spec.source.helm.parameters[] | select(.name == "image.tag")).value = env(IMAGE_TAG)'' -i ''kustomize/argocd/apps/${{ github.event.repository.name }}.yaml'''
+        required: false
+    secrets:
+      gh_token:
+        required: true
+      sc_token:
+        required: true
+      projectKey:
+        required: true
+      organization:
+        required: true
+
+concurrency:
+  group: ${{ github.event.repository.name }}-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: CI
+    uses: restreamio/github-actions-templates/.github/workflows/build-docker-images.yaml@master
+    secrets:
+      gh_token: ${{ secrets.gh_token }}
+  sast:
+    name: SonarCloud SAST with Clippy
+    runs-on: ['self-hosted','xsmall']
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Install required tools
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+          source "$HOME/.cargo/env"
+          rustup update stable
+          curl --proto '=https' --tlsv1.2 -fsSL https://github.com/taiki-e/cargo-llvm-cov/releases/latest/download/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz | tar xzf - -C "$HOME/.cargo/bin"
+          rustup component add clippy
+          sudo apt-get update  
+          sudo apt-get install pkg-config openssl libssl-dev -y
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+      - name: Install cargo-sonar and run Clippy
+        run: |
+            source "$HOME/.cargo/env"
+            cargo install cargo-sonar
+            cargo clippy --message-format json > clippy-report.json
+            cat clippy-report.json
+            cargo sonar --clippy --clippy-path clippy-report.json
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+          SONAR_TOKEN: ${{ secrets.sc_token }}
+        with:
+          args: >
+            -Dsonar.externalIssuesReportPaths=sonar-issues.json
+            -Dsonar.projectKey=${{ secrets.projectKey }}
+            -Dsonar.organization=${{ secrets.organization }}
