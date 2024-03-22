@@ -1,5 +1,5 @@
 ---
-name: Build Docker Image
+name: Rust SonarCloud SAST with Clippy
 on:
   workflow_call:
     inputs:
