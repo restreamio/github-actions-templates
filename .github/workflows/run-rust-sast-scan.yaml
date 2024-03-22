@@ -1,0 +1,61 @@
+---
+name: Rust SonarCloud SAST with Clippy
+on:
+  workflow_call:
+    inputs:
+      organization:
+        type: string
+        default: ""
+        required: true
+      projectKey:
+        type: string
+        default: ""
+        required: true
+    secrets:
+      gh_token:
+        required: true
+      sc_token:
+        required: true
+
+concurrency:
+  group: ${{ github.event.repository.name }}-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  sast:
+    name: SonarCloud SAST with Clippy
+    runs-on: ['self-hosted', 'xsmall']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Install required tools
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+          source "$HOME/.cargo/env"
+          rustup update stable
+          curl --proto '=https' --tlsv1.2 -fsSL https://github.com/taiki-e/cargo-llvm-cov/releases/latest/download/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz | tar xzf - -C "$HOME/.cargo/bin"
+          rustup component add clippy
+          sudo apt-get update
+          sudo apt-get install pkg-config openssl libssl-dev -y
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+      - name: Install cargo-sonar and run Clippy
+        run: |
+            source "$HOME/.cargo/env"
+            cargo install cargo-sonar
+            cargo clippy --message-format json > clippy-report.json
+            cargo sonar --clippy --clippy-path clippy-report.json
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+          SONAR_TOKEN: ${{ secrets.sc_token }}
+        with:
+          args: >
+            -Dsonar.externalIssuesReportPaths=sonar-issues.json
+            -Dsonar.projectKey=${{ inputs.projectKey }}
+            -Dsonar.organization=${{ inputs.organization }}
