@@ -2,42 +2,18 @@ name: Build Docker Image
 on:
   workflow_call:
     inputs:
-      ecr_region:
-        type: string
-        default: "us-east-1"
-        required: false
-      ecr_region_eu:
-        type: string
-        default: "eu-central-1"
-        required: false
-      pr_open:
-        type: boolean
-        default: true
-        required: false
-      docker_additional_labels:
+      organization:
         type: string
         default: ""
-        required: false
-      docker_additional_args:
+        required: true
+      projectKey:
         type: string
         default: ""
-        required: false
-      pr_repos:
-        type: string
-        default: "k8s"
-        required: false
-      pr_command:
-        type: string
-        default: 'yq e ''(.spec.source.helm.parameters[] | select(.name == "image.tag")).value = env(IMAGE_TAG)'' -i ''kustomize/argocd/apps/${{ github.event.repository.name }}.yaml'''
-        required: false
+        required: true
     secrets:
       gh_token:
         required: true
       sc_token:
-        required: true
-      projectKey:
-        required: true
-      organization:
         required: true
 
 concurrency:
@@ -45,16 +21,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: CI
-    uses: restreamio/github-actions-templates/.github/workflows/build-docker-images.yaml@master
-    secrets:
-      gh_token: ${{ secrets.gh_token }}
   sast:
     name: SonarCloud SAST with Clippy
     runs-on: ['self-hosted','xsmall']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
@@ -75,7 +46,6 @@ jobs:
             source "$HOME/.cargo/env"
             cargo install cargo-sonar
             cargo clippy --message-format json > clippy-report.json
-            cat clippy-report.json
             cargo sonar --clippy --clippy-path clippy-report.json
 
       - name: SonarCloud Scan
@@ -86,5 +56,5 @@ jobs:
         with:
           args: >
             -Dsonar.externalIssuesReportPaths=sonar-issues.json
-            -Dsonar.projectKey=${{ secrets.projectKey }}
-            -Dsonar.organization=${{ secrets.organization }}
+            -Dsonar.projectKey=${{ inputs.projectKey }}
+            -Dsonar.organization=${{ inputs.organization }}
