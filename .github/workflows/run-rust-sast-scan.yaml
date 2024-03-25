@@ -52,7 +52,7 @@ jobs:
             cargo install cargo-sonar
             cargo clippy --message-format json > clippy-report.json
         continue-on-error: ${{ inputs.ignore_failure == true }}
-            
+
       - name: Export cargo clippy results to sonar
         run: |
             source "$HOME/.cargo/env"
