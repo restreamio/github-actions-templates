@@ -11,6 +11,10 @@ on:
         type: string
         default: ""
         required: true
+      ignore_failure:
+        type: boolean
+        default: false
+        required: false
     secrets:
       gh_token:
         required: true
@@ -47,6 +51,11 @@ jobs:
             source "$HOME/.cargo/env"
             cargo install cargo-sonar
             cargo clippy --message-format json > clippy-report.json
+        continue-on-error: ${{ inputs.ignore_failure == true }}
+            
+      - name: Export cargo clippy results to sonar
+        run: |
+            source "$HOME/.cargo/env"
             cargo sonar --clippy --clippy-path clippy-report.json
 
       - name: SonarCloud Scan
