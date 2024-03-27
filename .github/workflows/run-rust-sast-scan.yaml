@@ -44,7 +44,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install pkg-config openssl libssl-dev -y
           sudo apt-get clean
-          sudo find / -name gstreamer-1.0.pc
           sudo rm -rf /var/lib/apt/lists/*
 
       - name: Install cargo-sonar and run Clippy
