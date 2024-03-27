@@ -11,6 +11,10 @@ on:
         type: string
         default: ""
         required: true
+      runner_size:
+        type: string
+        default: "xsmall"
+        required: false
     secrets:
       gh_token:
         required: true
@@ -24,7 +28,7 @@ concurrency:
 jobs:
   sast:
     name: SonarCloud SAST with Clippy
-    runs-on: ['self-hosted', 'xsmall']
+    runs-on: ['self-hosted', '${{ inputs.runner_size }}', 'amd64']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,6 +51,10 @@ jobs:
             source "$HOME/.cargo/env"
             cargo install cargo-sonar
             cargo clippy --message-format json > clippy-report.json
+
+      - name: Export cargo clippy results to sonar
+        run: |
+            source "$HOME/.cargo/env"
             cargo sonar --clippy --clippy-path clippy-report.json
 
       - name: SonarCloud Scan
