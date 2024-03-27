@@ -52,7 +52,7 @@ jobs:
             source "$HOME/.cargo/env"
             cargo install cargo-sonar
             cargo clippy --message-format json > clippy-report.json
-        
+
       - name: Export cargo clippy results to sonar
         run: |
             source "$HOME/.cargo/env"
