@@ -42,7 +42,7 @@ jobs:
           curl --proto '=https' --tlsv1.2 -fsSL https://github.com/taiki-e/cargo-llvm-cov/releases/latest/download/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz | tar xzf - -C "$HOME/.cargo/bin"
           rustup component add clippy
           sudo apt-get update
-          sudo apt-get install pkg-config openssl libssl-dev libglib2.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev -y
+          sudo apt-get install pkg-config openssl libssl-dev -y
           sudo apt-get clean
           sudo find / -name gstreamer-1.0.pc
           sudo rm -rf /var/lib/apt/lists/*
