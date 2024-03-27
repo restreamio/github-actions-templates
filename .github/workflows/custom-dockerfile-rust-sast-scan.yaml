@@ -62,7 +62,7 @@ jobs:
       - name: Copy file from Container to Runner
         run: |
           source .rust_sast
-          docker cp $CONTAINER_ID:/${{ inputs.path_to_clippy }}/clippy-report.json ./clippy-report.json
+          docker cp $CONTAINER_ID:${{ inputs.path_to_clippy }}/clippy-report.json ./clippy-report.json
 
       - name: Install cargo-sonar and run Clippy
         run: |
