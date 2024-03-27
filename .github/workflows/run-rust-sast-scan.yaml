@@ -11,9 +11,9 @@ on:
         type: string
         default: ""
         required: true
-      ignore_failure:
-        type: boolean
-        default: false
+      runner_size:
+        type: string
+        default: "xsmall"
         required: false
     secrets:
       gh_token:
@@ -28,7 +28,7 @@ concurrency:
 jobs:
   sast:
     name: SonarCloud SAST with Clippy
-    runs-on: ['self-hosted', 'xsmall']
+    runs-on: ['self-hosted', '${{ inputs.runner_size }}']
     steps:
       - uses: actions/checkout@v4
         with:
