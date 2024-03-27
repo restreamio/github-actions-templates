@@ -50,19 +50,20 @@ jobs:
           push: false
           build-args: |
             rust_sast=true
-          tags: myapp:latest
+          tags: rust_scan_container:latest
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Create Container from Image
         id: create_container
-        run: echo "CONTAINER_ID=$(docker create myapp)" >> .rust_sast
+        run: echo "CONTAINER_ID=$(docker create rust_scan_container)" >> .rust_sast
 
       - name: Copy file from Container to Runner
         run: |
           source .rust_sast
           docker cp $CONTAINER_ID:${{ inputs.path_to_clippy }}/clippy-report.json ./clippy-report.json
+          docker kill $CONTAINER_ID
 
       - name: Install cargo-sonar and run Clippy
         run: |
