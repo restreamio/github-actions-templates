@@ -28,7 +28,7 @@ concurrency:
 jobs:
   sast:
     name: SonarCloud SAST with Clippy
-    runs-on: ['self-hosted', '${{ inputs.runner_size }}']
+    runs-on: ['self-hosted', '${{ inputs.runner_size }}', 'amd64']
     steps:
       - uses: actions/checkout@v4
         with:
