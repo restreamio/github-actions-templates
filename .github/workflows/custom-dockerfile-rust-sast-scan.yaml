@@ -15,6 +15,10 @@ on:
         type: string
         default: "./Dockerfile"
         required: false
+      path_to_clippy:
+        type: string
+        default: ""
+        required: true
     secrets:
       gh_token:
         required: true
@@ -58,7 +62,7 @@ jobs:
       - name: Copy file from Container to Runner
         run: |
           source .rust_sast
-          docker cp $CONTAINER_ID:/code/clippy-report.json ./clippy-report.json
+          docker cp $CONTAINER_ID:/${{ inputs.path_to_clippy }}/clippy-report.json ./clippy-report.json
 
       - name: Install cargo-sonar and run Clippy
         run: |
