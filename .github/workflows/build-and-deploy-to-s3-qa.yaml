@@ -52,7 +52,7 @@ jobs:
   build:
     name: Build and deploy to S3
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
-    if: (github.event_name == 'pull_request' && github.event.action == 'push')
+    if: (github.event_name == 'pull_request')
     steps:
       - name: Show context
         env:
