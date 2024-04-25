@@ -104,8 +104,6 @@ jobs:
         run: |
           cd ${{ inputs.build_path }}
           aws s3 cp . "s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }}" --recursive --no-progress --exclude "*.js.map"
-          cd ../src/public
-          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }}" --recursive --no-progress --exclude "*.js.map"
 
   cleanup:
     name: Cleanup
