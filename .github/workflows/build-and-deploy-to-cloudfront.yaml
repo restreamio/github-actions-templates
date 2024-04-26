@@ -104,6 +104,8 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
         timeout-minutes: 1
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
