@@ -48,6 +48,11 @@ on:
         type: string
         required: true
 
+      with_nx:
+        type: boolean
+        default: false
+        required: false
+
 jobs:
   build:
     name: Build and deploy to S3
@@ -91,6 +96,12 @@ jobs:
           restore-keys: |
             build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
             build-cache-
+
+      - uses: nrwl/nx-set-shas@v3
+        if: inputs.with_nx
+
+      - run: git branch --track master origin/master
+        if: ${{ github.event_name == 'pull_request' && inputs.with_nx }}
 
       - name: Build
         run: ${{ inputs.build_command }}
