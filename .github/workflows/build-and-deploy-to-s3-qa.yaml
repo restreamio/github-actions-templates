@@ -47,7 +47,9 @@ on:
       s3_bucket_name:
         type: string
         required: true
-
+      # ======
+      # NX monorepo tools
+      # ======
       with_nx:
         type: boolean
         default: false
