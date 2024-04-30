@@ -56,6 +56,19 @@ on:
         required: false
 
 jobs:
+  print-url:
+    name: Print the url of QA build
+    runs-on: ["self-hosted", "xsmall", "prod"]
+    if: github.event.action == 'opened'
+    timeout-minutes: 1
+    steps:
+      - name: Leave comment with domain name
+        uses: mshick/add-pr-comment@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          message: |
+            QA Build will be available here: [https://${{ github.event.repository.name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io](https://${{ github.event.repository.name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io)
   build:
     name: Build and deploy to S3
     runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
@@ -105,7 +118,7 @@ jobs:
         if: inputs.with_nx
 
       - run: git branch --track master origin/master
-        if: ${{ github.event_name == 'pull_request' && inputs.with_nx }}
+        if: ${{ github.event_name == 'pull_request'  && github.event.action != 'closed' && github.event.pull_request.merged != true && inputs.with_nx }}
 
       - name: Build
         run: ${{ inputs.build_command }}
