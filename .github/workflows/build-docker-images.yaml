@@ -99,7 +99,7 @@ jobs:
       - name: Build, tag and push image to US
         uses: docker/build-push-action@v5
         if: github.ref != 'refs/heads/master'
-        timeout-minutes: 30
+        timeout-minutes: 60
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY_NAME: ${{ matrix.ecr_repository_name }}
@@ -130,7 +130,7 @@ jobs:
       - name: Build, tag and push image to EU
         uses: docker/build-push-action@v5
         if: github.ref != 'refs/heads/master'
-        timeout-minutes: 30
+        timeout-minutes: 60
         continue-on-error: true
         env:
           ECR_REGISTRY: ${{ steps.login-ecr-eu.outputs.registry }}
