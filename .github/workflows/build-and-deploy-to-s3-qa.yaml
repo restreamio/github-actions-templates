@@ -1,9 +1,6 @@
 ---
 name: Build and deploy to S3 QA
 
-concurrency:
-  group: ${{ github.event.repository.name }}-build-n-deploy-s3-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 
 on:
   workflow_call:
@@ -27,6 +24,15 @@ on:
         type: string
         default: yarn
         required: false
+      # =====
+      # Github Context variables
+      # =====
+      repo_name:
+        type: string
+        required: true
+      pr_number:
+        type: string
+        required: true
       # =====
       # Build
       # =====
@@ -54,6 +60,10 @@ on:
         type: boolean
         default: false
         required: false
+
+concurrency:
+  group: ${{ repo_name }}-build-n-deploy-s3-${{ pr_number }}
+  cancel-in-progress: true
 
 jobs:
   print-url:
