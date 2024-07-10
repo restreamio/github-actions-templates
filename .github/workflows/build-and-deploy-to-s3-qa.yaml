@@ -64,7 +64,7 @@ on:
         required: false
 
 concurrency:
-  group: ${{ repo_name }}-build-n-deploy-s3-${{ pr_number }}
+  group: ${{ inputs.repo_name }}-build-n-deploy-s3-${{ inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
