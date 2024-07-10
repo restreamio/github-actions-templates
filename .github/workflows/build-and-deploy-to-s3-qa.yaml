@@ -29,10 +29,10 @@ on:
       # =====
       repo_name:
         type: string
-        required: true
+        required: false
       pr_number:
         type: string
-        required: true
+        required: false
       # =====
       # Build
       # =====
