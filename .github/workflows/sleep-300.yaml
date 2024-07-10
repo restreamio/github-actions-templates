@@ -1,0 +1,20 @@
+---
+name: Sleep for 300 seconds
+
+on:
+  workflow_call:
+    inputs:
+      runner_size:
+        type: string
+        default: "xsmall"
+        required: false
+
+jobs:
+  sleep:
+    name: Sleep for 300 seconds
+    runs-on: ['self-hosted', '${{ inputs.runner_size }}', 'amd64']
+    steps:
+      - name: Sleep for 300 seconds
+        run: |
+          echo "Sleeping for 300 seconds (debugging task)"
+          sleep 300
