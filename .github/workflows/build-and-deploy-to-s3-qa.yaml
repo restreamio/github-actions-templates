@@ -30,9 +30,11 @@ on:
       repo_name:
         type: string
         required: false
+        default: ${{ github.event.repository.name }}
       pr_number:
         type: string
         required: false
+        default: ${{ github.event.pull_request.number }}
       # =====
       # Build
       # =====
