@@ -44,12 +44,16 @@ on:
         type: string
         default: 'yq e ''(.spec.source.helm.parameters[] | select(.name == "image.tag")).value = env(IMAGE_TAG)'' -i ''kustomize/argocd/apps/${{ github.event.repository.name }}.yaml'''
         required: false
+      concurrency_name:
+        type: string
+        default: "build"
+        required: false
     secrets:
       gh_token:
         required: true
 
 concurrency:
-  group: ${{ github.event.repository.name }}-build-${{ github.event.pull_request.number }}
+  group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

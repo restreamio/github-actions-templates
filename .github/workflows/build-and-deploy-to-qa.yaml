@@ -60,12 +60,16 @@ on:
         type: string
         default: ""
         required: false
+      concurrency_name:
+        type: string
+        default: "qa"
+        required: false
     secrets:
       argocd_qa_auth_token:
         required: true
 
 concurrency:
-  group: ${{ github.event.repository.name }}-qa-${{ github.event.pull_request.number }}
+  group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

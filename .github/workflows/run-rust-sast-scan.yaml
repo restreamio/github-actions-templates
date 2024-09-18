@@ -15,6 +15,10 @@ on:
         type: string
         default: "xsmall"
         required: false
+      concurrency_name:
+        type: string
+        default: "rust-scan"
+        required: false
     secrets:
       gh_token:
         required: true
@@ -22,17 +26,17 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.event.repository.name }}-build-${{ github.event.pull_request.number }}
+  group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   sast:
     name: SonarCloud SAST with Clippy
-    runs-on: ['self-hosted', '${{ inputs.runner_size }}', 'amd64']
+    runs-on: ["self-hosted", "${{ inputs.runner_size }}", "amd64"]
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Install required tools
         run: |
@@ -48,14 +52,14 @@ jobs:
 
       - name: Install cargo-sonar and run Clippy
         run: |
-            source "$HOME/.cargo/env"
-            cargo install cargo-sonar
-            cargo clippy --message-format json > clippy-report.json
+          source "$HOME/.cargo/env"
+          cargo install cargo-sonar
+          cargo clippy --message-format json > clippy-report.json
 
       - name: Export cargo clippy results to sonar
         run: |
-            source "$HOME/.cargo/env"
-            cargo sonar --clippy --clippy-path clippy-report.json
+          source "$HOME/.cargo/env"
+          cargo sonar --clippy --clippy-path clippy-report.json
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master

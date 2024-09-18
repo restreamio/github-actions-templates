@@ -19,6 +19,10 @@ on:
         type: string
         default: ""
         required: true
+      concurrency_name:
+        type: string
+        default: "custom-rust-scan"
+        required: false
     secrets:
       gh_token:
         required: true
@@ -26,17 +30,17 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.event.repository.name }}-build-${{ github.event.pull_request.number }}
+  group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   sast:
     name: SonarCloud SAST with Clippy
-    runs-on: ['self-hosted', 'xlarge']
+    runs-on: ["self-hosted", "xlarge"]
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         timeout-minutes: 5
@@ -66,11 +70,11 @@ jobs:
 
       - name: Install cargo-sonar and run Clippy
         run: |
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
-            source "$HOME/.cargo/env"
-            rustup update stable
-            cargo install cargo-sonar
-            cargo sonar --clippy --clippy-path clippy-report.json
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+          source "$HOME/.cargo/env"
+          rustup update stable
+          cargo install cargo-sonar
+          cargo sonar --clippy --clippy-path clippy-report.json
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
