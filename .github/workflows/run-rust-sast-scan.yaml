@@ -22,7 +22,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.event.repository.name }}-build-${{ github.event.pull_request.number }}
+  group: ${{ github.event.repository.name }}-rust-scan-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
