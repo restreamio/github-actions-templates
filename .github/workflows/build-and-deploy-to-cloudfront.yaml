@@ -3,7 +3,7 @@ name: Build and deploy to CloudFront
 
 concurrency:
   group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'push' }}
 
 on:
   workflow_call:
