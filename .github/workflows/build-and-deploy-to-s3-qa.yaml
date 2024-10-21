@@ -1,0 +1,155 @@
+---
+name: Build and deploy to S3 QA
+
+
+on:
+  workflow_call:
+    inputs:
+      # =====
+      # Setup
+      # =====
+      instance_type:
+        type: string
+        default: xlarge
+        required: false
+      node_version:
+        type: string
+        # If set to '' version will be extracted from .nvmrc file
+        default: "16"
+        required: false
+      node_options:
+        type: string
+        required: false
+      package_manager:
+        type: string
+        default: yarn
+        required: false
+      # =====
+      # Github Context variables
+      # =====
+      repo_name:
+        type: string
+        required: false
+        default: ${{ github.event.repository.name }}
+      pr_number:
+        type: string
+        required: false
+        default: ${{ github.event.pull_request.number }}
+      # =====
+      # Build
+      # =====
+      build_command:
+        type: string
+        default: yarn build
+        required: false
+      build_cache_path:
+        type: string
+        required: false
+      build_path:
+        type: string
+        default: ./dist
+        required: false
+      # ======
+      # Deploy
+      # ======
+      s3_bucket_name:
+        type: string
+        required: true
+      # ======
+      # NX monorepo tools
+      # ======
+      with_nx:
+        type: boolean
+        default: false
+        required: false
+
+concurrency:
+  group: ${{ inputs.repo_name }}-build-n-deploy-s3-${{ inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  print-url:
+    name: Print the url of QA build
+    runs-on: ["self-hosted", "xsmall", "prod"]
+    if: github.event.action == 'opened'
+    timeout-minutes: 1
+    steps:
+      - name: Leave comment with domain name
+        uses: mshick/add-pr-comment@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          message: |
+            QA Build will be available here: [https://${{ github.event.repository.name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io](https://${{ github.event.repository.name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io)
+  build:
+    name: Build and deploy to S3
+    runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true)
+    steps:
+      - name: Show context
+        env:
+          # To make debugging easier in case of issues
+          GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
+          INPUTS_JSON: ${{ toJson(inputs) }}
+        run: |
+          echo Github context: "$GITHUB_CONTEXT_JSON"
+          echo Inputs: "$INPUTS_JSON"
+
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+        timeout-minutes: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        timeout-minutes: 5
+        with:
+          node-version: ${{ inputs.node_version }}
+          node-version-file: .nvmrc
+          cache: ${{ inputs.package_manager }}
+
+      - name: Install dependencies
+        run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
+        timeout-minutes: 10
+
+      - name: Cache build
+        if: inputs.build_cache_path
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: ${{ inputs.build_cache_path }}
+          key: build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-${{ github.ref }}
+          restore-keys: |
+            build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+            build-cache-
+
+      - uses: nrwl/nx-set-shas@v3
+        with:
+          main-branch-name: "master"
+        if: inputs.with_nx
+
+      - run: git branch --track master origin/master
+        if: ${{ github.event_name == 'pull_request'  && github.event.action != 'closed' && github.event.pull_request.merged != true && inputs.with_nx }}
+
+      - name: Build
+        run: ${{ inputs.build_command }}
+        timeout-minutes: 15
+        env:
+          COMMIT_HASH: ${{ github.sha }}
+          NODE_OPTIONS: ${{ inputs.node_options }}
+
+      - name: Deploy to S3
+        timeout-minutes: 15
+        run: |
+          cd ${{ inputs.build_path }}
+          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }}" --recursive --no-progress --exclude "*.js.map"
+
+  cleanup:
+    name: Cleanup
+    runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
+    if: (github.event_name == 'pull_request' && github.event.action == 'closed') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    steps:
+      - name: Delete S3 directory on PR close
+        run: |
+          aws s3 rm s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }} --recursive
