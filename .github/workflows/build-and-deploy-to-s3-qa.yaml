@@ -67,7 +67,7 @@ on:
         required: false
       concurrency_name:
         type: string
-        default: ""
+        default: "build-n-deploy-to-s3-qa"
         required: false
 
 
