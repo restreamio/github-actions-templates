@@ -2,7 +2,7 @@
 name: Build and deploy to CloudFront
 
 concurrency:
-  group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
+  group: ${{ inputs.concurrency_name }}
   cancel-in-progress: true
 
 on:
@@ -79,6 +79,10 @@ on:
       with_nx:
         type: boolean
         default: false
+        required: false
+      concurrency_name:
+        type: string
+        default: ""
         required: false
 
     secrets:
