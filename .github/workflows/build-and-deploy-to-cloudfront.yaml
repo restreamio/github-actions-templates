@@ -82,7 +82,7 @@ on:
         required: false
       concurrency_name:
         type: string
-        default: ""
+        default: "build-n-deploy-to-cf"
         required: false
 
     secrets:
