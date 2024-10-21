@@ -1,0 +1,88 @@
+---
+name: Rust SonarCloud SAST with Clippy using Dockerfile of Repo
+on:
+  workflow_call:
+    inputs:
+      organization:
+        type: string
+        default: ""
+        required: true
+      projectKey:
+        type: string
+        default: ""
+        required: true
+      dockerfile:
+        type: string
+        default: "./Dockerfile"
+        required: false
+      path_to_clippy:
+        type: string
+        default: ""
+        required: true
+      concurrency_name:
+        type: string
+        default: "custom-rust-scan"
+        required: false
+    secrets:
+      gh_token:
+        required: true
+      sc_token:
+        required: true
+
+concurrency:
+  group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  sast:
+    name: SonarCloud SAST with Clippy
+    runs-on: ["self-hosted", "xlarge"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        timeout-minutes: 5
+
+      - name: Build, tag and push image
+        uses: docker/build-push-action@v5
+        timeout-minutes: 30
+        with:
+          context: ./
+          file: ${{ inputs.dockerfile }}
+          push: false
+          build-args: |
+            rust_sast=true
+          tags: rust_scan_container:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create Container from Image
+        id: create_container
+        run: echo "CONTAINER_ID=$(docker create rust_scan_container)" >> .rust_sast
+
+      - name: Copy file from Container to Runner
+        run: |
+          source .rust_sast
+          docker cp $CONTAINER_ID:${{ inputs.path_to_clippy }}/clippy-report.json ./clippy-report.json
+
+      - name: Install cargo-sonar and run Clippy
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+          source "$HOME/.cargo/env"
+          rustup update stable
+          cargo install cargo-sonar
+          cargo sonar --clippy --clippy-path clippy-report.json
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+          SONAR_TOKEN: ${{ secrets.sc_token }}
+        with:
+          args: >
+            -Dsonar.externalIssuesReportPaths=sonar-issues.json
+            -Dsonar.projectKey=${{ inputs.projectKey }}
+            -Dsonar.organization=${{ inputs.organization }}

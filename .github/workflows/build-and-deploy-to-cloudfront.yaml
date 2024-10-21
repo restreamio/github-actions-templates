@@ -2,7 +2,7 @@
 name: Build and deploy to CloudFront
 
 concurrency:
-  group: ${{ github.event.repository.name }}-build-n-deploy-${{ github.event.pull_request.number }}
+  group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 on:
@@ -118,7 +118,7 @@ jobs:
       - name: Get package version
         # Version needed only for source maps, so disable it if project doesn't post them to Sentry or DataDog
         if: inputs.upload_source_maps
-        id: 'get_package_version'
+        id: "get_package_version"
         run: |
           echo Package version: "$(npm pkg get version --workspaces=false | sed 's/"//g')"
           echo "package_version=$(npm pkg get version --workspaces=false | sed 's/"//g')" >> $GITHUB_OUTPUT
