@@ -218,11 +218,11 @@ jobs:
           import urllib.request
           import urllib.parse
           import os
-          
+
           def make_request(url, method="GET", data=None, headers=None):
               if headers is None:
                   headers = {}
-              
+
               default_headers = {
                   "Accept": "application/vnd.github+json",
                   "Authorization": "Bearer " + os.environ["GITHUB_TOKEN"],
@@ -241,7 +241,7 @@ jobs:
                   print(f"HTTP Error: {e.code} - {e.reason}")
                   print(e.read().decode("utf-8"))
                   raise
-          
+
           def get_branch_caches(owner, repo, ref, page=1):
               params = {
                   "ref": ref,
@@ -253,24 +253,24 @@ jobs:
               query_string = urllib.parse.urlencode(params)
               url = f"https://api.github.com/repos/{owner}/{repo}/actions/caches?{query_string}"
               return make_request(url)
-          
+
           def delete_cache(owner, repo, cache_id):
               url = f"https://api.github.com/repos/{owner}/{repo}/actions/caches/{cache_id}"
               return make_request(url, method="DELETE")
-          
+
           # get env vars
           github_repository = os.environ["GITHUB_REPOSITORY"]
           owner, repo = github_repository.split("/")
-          
+
           ref = os.environ["GITHUB_REF"]
           print(f"Cleaning caches for ref: {ref}")
-          
+
           # get caches for the branch
           response = get_branch_caches(owner, repo, ref)
           caches = response.get("actions_caches", [])
-          
+
           print(f"Found {len(caches)} caches")
-          
+
           # delete up to 100 caches
           for cache in caches:
               cache_id = cache["id"]
