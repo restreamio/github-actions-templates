@@ -159,7 +159,7 @@ jobs:
           aws s3 rm s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }} --recursive
       - name: Clean cache of merged branches
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 -c '
           import json
