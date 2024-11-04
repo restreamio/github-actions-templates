@@ -137,7 +137,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ inputs.build_cache_path }}
-          key: build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-${{ github.ref }}
+          key: build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
           restore-keys: |
             build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
             build-cache-
