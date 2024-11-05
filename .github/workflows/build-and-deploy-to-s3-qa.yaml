@@ -210,7 +210,7 @@ jobs:
           github_repository = os.environ["GITHUB_REPOSITORY"]
           owner, repo = github_repository.split("/")
 
-          ref = os.environ["GITHUB_REF"]
+          ref = f"refs/heads/{os.environ['GITHUB_HEAD_REF']}"
           print(f"Cleaning caches for ref: {ref}")
 
           # get caches for the branch
