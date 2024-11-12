@@ -131,7 +131,7 @@ jobs:
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 10
 
-      - name: Cache build outputs
+      - name: Cache build
         if: inputs.build_cache_path
         timeout-minutes: 5
         uses: actions/cache@v4

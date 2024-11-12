@@ -122,10 +122,12 @@ jobs:
         timeout-minutes: 5
         uses: actions/cache@v4
         with:
-          path: ${{ inputs.build_cache_path }}
-          key: build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+          path: |
+            ${{ inputs.build_cache_path }}
+            ${{ inputs.build_cache_path == '.nx/cache' && '.nx/cache' || '' }}
+          key: build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-${{ inputs.build_cache_path == '.nx/cache' && hashFiles('nx.json') || '' }}
           restore-keys: |
-            build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+            build-cache-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-
             build-cache-
 
       - uses: nrwl/nx-set-shas@v3
