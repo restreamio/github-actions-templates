@@ -8,7 +8,7 @@ concurrency:
 permissions:
   actions: write # mark parent workflow as failed, delete caches
   checks: write # create checks
-  contents: write # release and changelog
+  contents: read # list refs
   id-token: write # fetch OIDC token from AWS IAM
   statuses: write # update commit statuses in parent workflow
 
