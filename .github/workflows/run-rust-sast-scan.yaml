@@ -30,7 +30,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: write # mark parent workflow is failed
+  actions: write # mark parent workflow as failed
   checks: write # create checks
   contents: read # checkout repo, get secrets
   statuses: write # update commit statuses in parent workflow
