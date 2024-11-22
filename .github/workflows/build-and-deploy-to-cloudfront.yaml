@@ -5,6 +5,10 @@ concurrency:
   group: ${{ inputs.concurrency_name }}
   cancel-in-progress: true
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   workflow_call:
     inputs:
@@ -13,7 +17,7 @@ on:
       # =====
       instance_type:
         type: string
-        default: xlarge
+        default: ubuntu-amd64-4core
         required: false
       node_version:
         type: string
@@ -94,7 +98,7 @@ on:
 jobs:
   build:
     name: Build and deploy to CloudFront
-    runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
+    runs-on: ${{ inputs.instance_type }}
     steps:
       - name: Show context
         env:
@@ -110,6 +114,13 @@ jobs:
         timeout-minutes: 1
         with:
           fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        timeout-minutes: 1
+        with:
+          role-to-assume: arn:aws:iam::318522186253:role/github-oidc-role
+          aws-region: us-east-1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -208,7 +219,7 @@ jobs:
 
   cleanup:
     name: Cleanup
-    runs-on: ["self-hosted", "${{ inputs.instance_type }}", "prod"]
+    runs-on: ubuntu-latest
     if: (github.event_name == 'pull_request' && github.event.action == 'closed') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     steps:
       - name: Clean Actions caches
