@@ -278,11 +278,6 @@ jobs:
           state: "success"
           sha: ${{github.event.pull_request.head.sha || github.sha}}
 
-      - name: Install YQ
-        if: github.ref == 'refs/heads/master' && inputs.pr_open
-        timeout-minutes: 2
-        uses: chrisdickinson/setup-yq@latest
-
       - name: Create git commits
         if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
