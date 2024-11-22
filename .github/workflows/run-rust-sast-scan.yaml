@@ -29,7 +29,11 @@ concurrency:
   group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-permissions: write-all
+permissions:
+  actions: write # mark parent workflow is failed
+  checks: write # create checks
+  contents: read # checkout repo, get secrets
+  statuses: write # update commit statuses in parent workflow
 
 jobs:
   sast:

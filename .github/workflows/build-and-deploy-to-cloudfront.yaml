@@ -5,7 +5,13 @@ concurrency:
   group: ${{ inputs.concurrency_name }}
   cancel-in-progress: true
 
-permissions: write-all
+permissions:
+  actions: write # mark parent workflow is failed, delete caches
+  checks: write # create checks
+  contents: read # list refs
+  id-token: write # fetch OIDC token from AWS IAM
+  statuses: write # update commit statuses in parent workflow
+
 
 on:
   workflow_call:
