@@ -5,9 +5,7 @@ concurrency:
   group: ${{ inputs.concurrency_name }}
   cancel-in-progress: true
 
-permissions:
-  id-token: write
-  contents: read
+permissions: write-all
 
 on:
   workflow_call:

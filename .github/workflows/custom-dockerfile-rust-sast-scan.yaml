@@ -33,9 +33,7 @@ concurrency:
   group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-permissions:
-  id-token: write
-  contents: read
+permissions: write-all
 
 jobs:
   sast:
