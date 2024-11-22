@@ -59,6 +59,8 @@ concurrency:
 permissions:
   id-token: write
   contents: read
+  checks: write
+  statuses: write
 
 jobs:
   build:
