@@ -56,11 +56,12 @@ concurrency:
   group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-permissions:
-  id-token: write
-  contents: read
-  checks: write
-  statuses: write
+permissions: write-all
+#   id-token: write
+#   contents: read
+#   checks: write
+#   statuses: write
+#   pull-requests: write
 
 jobs:
   build:
