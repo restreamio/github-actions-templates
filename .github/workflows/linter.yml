@@ -3,6 +3,11 @@ name: "Yaml linter"
 
 on: push
 
+permissions:
+  actions: write # mark parent workflow as failed
+  contents: read # checkout repo
+  statuses: write # update commit statuses in parent workflow
+
 jobs:
   linter:
     name: "Linter"
