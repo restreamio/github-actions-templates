@@ -237,8 +237,19 @@ jobs:
     name: Update application in ArgoCD
     needs:
       - build
-    runs-on: ["self-hosted", "xsmall", "prod"]
+    runs-on: ubuntu-latest
     steps:
+      - name: Install ArgoCD cli
+        id: argocd-cli
+        continue-on-error: true
+        timeout-minutes: 1
+        run: >
+          export ARCH=$(uname -m) && \
+          if [ "$ARCH" = "aarch64" ]; then export ARCH=arm64 ; fi && \
+          if [ "$ARCH" = "x86_64" ]; then export ARCH=amd64 ; fi && \
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-${ARCH} && \
+          chmod +x /usr/local/bin/argocd
+
       - name: Update application in argocd
         id: argocd-update
         if: github.event.action != 'closed'
@@ -276,9 +287,20 @@ jobs:
 
   argocd-delete:
     name: Delete application in ArgoCD
-    runs-on: ["self-hosted", "xsmall", "prod"]
+    runs-on: ubuntu-latest
     if: github.event.action == 'closed'
     steps:
+      - name: Install ArgoCD cli
+        id: argocd-cli
+        continue-on-error: true
+        timeout-minutes: 1
+        run: >
+          export ARCH=$(uname -m) && \
+          if [ "$ARCH" = "aarch64" ]; then export ARCH=arm64 ; fi && \
+          if [ "$ARCH" = "x86_64" ]; then export ARCH=amd64 ; fi && \
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-${ARCH} && \
+          chmod +x /usr/local/bin/argocd
+
       - name: Delete application in argocd
         continue-on-error: true
         timeout-minutes: 1
