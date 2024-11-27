@@ -26,7 +26,7 @@ on:
         required: false
       build_instance_type:
         type: string
-        default: "xlarge"
+        default: ubuntu-amd64-4core
         required: false
       sync_policy:
         type: string
@@ -65,17 +65,29 @@ on:
         default: "qa"
         required: false
     secrets:
-      argocd_qa_auth_token:
+      ARGOCD_QA_AUTH_TOKEN:
+        required: true
+      CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_ID:
+        required: true
+      CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_SECRET:
         required: true
 
 concurrency:
   group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+permissions:
+  actions: write # mark parent workflow as failed, delete caches
+  checks: write # create checks
+  contents: read # list refs
+  id-token: write # fetch OIDC token from AWS IAM
+  pull-requests: write # create PRs comments
+  statuses: write # update commit statuses in parent workflow, CI bot updates
+
 jobs:
   print-url:
     name: Print the url of QA build
-    runs-on: ["self-hosted", "xsmall", "prod"]
+    runs-on: ubuntu-latest
     if: github.event.action == 'opened'
     timeout-minutes: 1
     steps:
@@ -89,7 +101,7 @@ jobs:
 
   build:
     name: Build and upload docker image
-    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
+    runs-on: ${{ inputs.build_instance_type }}
     if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened'
     outputs:
       IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
@@ -110,6 +122,13 @@ jobs:
           echo "branch=$(echo ${{ github.head_ref }} | sed -e 's/\//_/g' -e 's/-/_/g' -e 's/./\L&/g')" >> $GITHUB_OUTPUT
           echo "contributor=$(git log -1 --pretty=format:'%an' |  tr -d '\n')" >> $GITHUB_OUTPUT
         timeout-minutes: 1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        timeout-minutes: 1
+        with:
+          role-to-assume: arn:aws:iam::318522186253:role/github-oidc-role
+          aws-region: ${{ inputs.ecr_region }}
 
       - name: Login to Amazon US ECR
         id: login-ecr
@@ -237,8 +256,19 @@ jobs:
     name: Update application in ArgoCD
     needs:
       - build
-    runs-on: ["self-hosted", "xsmall", "prod"]
+    runs-on: ubuntu-latest
     steps:
+      - name: Install ArgoCD cli
+        id: argocd-cli
+        continue-on-error: true
+        timeout-minutes: 1
+        run: |
+          export ARCH=$(uname -m) && \
+          if [ "$ARCH" = "aarch64" ]; then export ARCH=arm64 ; fi && \
+          if [ "$ARCH" = "x86_64" ]; then export ARCH=amd64 ; fi && \
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-${ARCH} && \
+          chmod +x /usr/local/bin/argocd
+
       - name: Update application in argocd
         id: argocd-update
         if: github.event.action != 'closed'
@@ -248,7 +278,9 @@ jobs:
           IMAGE_TAG: ${{ needs.build.outputs.IMAGE_TAG }}
         run: >
           argocd app set ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
-          --project ${{ inputs.argocd_project }} --auth-token ${{ secrets.argocd_qa_auth_token }}
+          --project ${{ inputs.argocd_project }} --auth-token ${{ secrets.ARGOCD_QA_AUTH_TOKEN }}
+          --header "CF-Access-Client-Id: ${{ secrets.CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_ID }}"
+          --header "CF-Access-Client-Secret: ${{ secrets.CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_SECRET }}"
           --helm-set-string image.tag=${{ env.IMAGE_TAG }} --grpc-web
 
       - name: Create application in argocd
@@ -262,8 +294,10 @@ jobs:
           --repo https://github.com/${{ inputs.helm_repos }} --path ${{ inputs.helm_chart }}
           --dest-server ${{ inputs.kubernetes_url }} --sync-policy ${{ inputs.sync_policy }}
           --project ${{ inputs.argocd_project }} --dest-namespace ${{ inputs.kubernetes_namespace }}
-          --auth-token ${{ secrets.argocd_qa_auth_token }} --helm-set-string image.tag=${{ env.IMAGE_TAG }}
+          --auth-token ${{ secrets.ARGOCD_QA_AUTH_TOKEN }} --helm-set-string image.tag=${{ env.IMAGE_TAG }}
           --helm-set ingress.enabled=true --helm-set-string ingress.host=${{ inputs.argocd_app_fqdn }}
+          --header "CF-Access-Client-Id: ${{ secrets.CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_ID }}"
+          --header "CF-Access-Client-Secret: ${{ secrets.CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_SECRET }}"
           --self-heal --auto-prune --grpc-web ${{ inputs.argocd_additional_options }}
 
       - name: Wait for the application to be ready
@@ -272,16 +306,111 @@ jobs:
         timeout-minutes: 5
         run: >
           argocd app wait ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
-          --auth-token ${{ secrets.argocd_qa_auth_token }} --grpc-web
+          --header "CF-Access-Client-Id: ${{ secrets.CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_ID }}"
+          --header "CF-Access-Client-Secret: ${{ secrets.CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_SECRET }}"
+          --auth-token ${{ secrets.ARGOCD_QA_AUTH_TOKEN }} --grpc-web
 
   argocd-delete:
     name: Delete application in ArgoCD
-    runs-on: ["self-hosted", "xsmall", "prod"]
+    runs-on: ubuntu-latest
     if: github.event.action == 'closed'
     steps:
+      - name: Install ArgoCD cli
+        id: argocd-cli
+        continue-on-error: true
+        timeout-minutes: 1
+        run: |
+          export ARCH=$(uname -m) && \
+          if [ "$ARCH" = "aarch64" ]; then export ARCH=arm64 ; fi && \
+          if [ "$ARCH" = "x86_64" ]; then export ARCH=amd64 ; fi && \
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-${ARCH} && \
+          chmod +x /usr/local/bin/argocd
+
       - name: Delete application in argocd
         continue-on-error: true
         timeout-minutes: 1
         run: >
           argocd app delete ${{ inputs.argocd_app_name }} --server ${{ inputs.argocd_server }}
-          --auth-token ${{ secrets.argocd_qa_auth_token }} -y --grpc-web
+          --header "CF-Access-Client-Id: ${{ secrets.CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_ID }}"
+          --header "CF-Access-Client-Secret: ${{ secrets.CLOUDFLARE_ZERO_TRUST_ARGOCD_CLIENT_SECRET }}"
+          --auth-token ${{ secrets.ARGOCD_QA_AUTH_TOKEN }} -y --grpc-web
+
+  cleanup:
+    name: Cleanup Actions Caches
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'pull_request' && github.event.action == 'closed') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    steps:
+      - name: Clean Actions caches
+        run: |
+          python3 -c '
+          import json
+          import urllib.request
+          import urllib.parse
+          import os
+
+          def make_request(url, method="GET", data=None, headers=None):
+              if headers is None:
+                  headers = {}
+
+              default_headers = {
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": "Bearer ${{ secrets.GITHUB_TOKEN }}",
+                  "X-GitHub-Api-Version": "2022-11-28"
+              }
+              headers = {**default_headers, **headers}
+
+              try:
+                  if data:
+                      data = json.dumps(data).encode("utf-8")
+
+                  req = urllib.request.Request(url, data=data, headers=headers, method=method)
+                  with urllib.request.urlopen(req) as response:
+                      if method == "GET":
+                          return json.loads(response.read().decode("utf-8"))
+                      return True
+              except urllib.error.HTTPError as e:
+                  print(f"HTTP Error: {e.code} - {e.reason}")
+                  print(e.read().decode("utf-8"))
+                  raise
+
+          def get_branch_caches(owner, repo, ref, page=1):
+              params = {
+                  "ref": ref,
+                  "per_page": "100",
+                  "page": str(page),
+                  "sort": "last_accessed_at",
+                  "direction": "desc"
+              }
+              query_string = urllib.parse.urlencode(params)
+              url = f"https://api.github.com/repos/{owner}/{repo}/actions/caches?{query_string}"
+              return make_request(url)
+
+          def delete_cache(owner, repo, cache_id):
+              url = f"https://api.github.com/repos/{owner}/{repo}/actions/caches/{cache_id}"
+              return make_request(url, method="DELETE")
+
+          # get env vars
+          github_repository = os.environ["GITHUB_REPOSITORY"]
+          owner, repo = github_repository.split("/")
+
+          ref = "refs/pull/${{ github.event.pull_request.number }}/merge"
+          print(f"Cleaning caches for ref: {ref}")
+
+          # get caches for the branch
+          response = get_branch_caches(owner, repo, ref)
+          caches = response.get("actions_caches", [])
+
+          print(f"Found {len(caches)} caches")
+
+          # delete up to 100 caches
+          deleted_count = 0
+          for cache in caches[:100]:
+              cache_id = cache["id"]
+              print(f"Deleting cache: {cache_id}")
+              try:
+                  if delete_cache(owner, repo, cache_id):
+                      print(f"Successfully deleted cache: {cache_id}")
+                      deleted_count += 1
+              except Exception as e:
+                  print(f"Failed to delete cache {cache_id}: {str(e)}")
+          '
