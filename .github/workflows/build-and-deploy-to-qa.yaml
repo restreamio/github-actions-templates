@@ -336,7 +336,7 @@ jobs:
           --auth-token ${{ secrets.ARGOCD_QA_AUTH_TOKEN }} -y --grpc-web
 
   cleanup:
-    name: Cleanup
+    name: Cleanup Actions Caches
     runs-on: ubuntu-latest
     if: (github.event_name == 'pull_request' && github.event.action == 'closed') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     steps:
