@@ -21,7 +21,7 @@ on:
       # =====
       instance_type:
         type: string
-        default: ubuntu-amd64-4core
+        default: ubuntu-arm64-4core
         required: false
       node_version:
         type: string
