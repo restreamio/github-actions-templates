@@ -10,6 +10,7 @@ permissions:
   checks: write # create checks
   contents: read # list refs
   id-token: write # fetch OIDC token from AWS IAM
+  pull-requests: write # create PRs comments
   statuses: write # update commit statuses in parent workflow
 
 on:
@@ -76,7 +77,6 @@ on:
         type: string
         default: "build-n-deploy-to-s3-qa"
         required: false
-
 
 jobs:
   print-url:
