@@ -26,7 +26,7 @@ on:
         required: false
       build_instance_type:
         type: string
-        default: "xlarge"
+        default: ubuntu-amd64-4core
         required: false
       sync_policy:
         type: string
@@ -87,7 +87,7 @@ permissions:
 jobs:
   print-url:
     name: Print the url of QA build
-    runs-on: ["self-hosted", "xsmall", "prod"]
+    runs-on: ubuntu-latest
     if: github.event.action == 'opened'
     timeout-minutes: 1
     steps:
@@ -101,7 +101,7 @@ jobs:
 
   build:
     name: Build and upload docker image
-    runs-on: ["self-hosted", "${{ inputs.build_instance_type }}", "prod"]
+    runs-on: ${{ inputs.build_instance_type }}
     if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened'
     outputs:
       IMAGE_TAG: ${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
