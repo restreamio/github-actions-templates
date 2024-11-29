@@ -145,7 +145,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag and push image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         timeout-minutes: 30
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -171,7 +171,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Tag latest for master branch
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 30
         env:
@@ -198,7 +198,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build, tag and push image in EU
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         timeout-minutes: 30
         continue-on-error: true
         env:
@@ -225,7 +225,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Tag latest for master branch in EU
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 30
         continue-on-error: true

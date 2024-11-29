@@ -116,7 +116,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag and push image to US
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.ref != 'refs/heads/master'
         timeout-minutes: 60
         env:
@@ -147,7 +147,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build, tag and push image to EU
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.ref != 'refs/heads/master'
         timeout-minutes: 60
         continue-on-error: true
@@ -179,7 +179,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Tag prod and latest for master branch in US
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 60
         env:
@@ -211,7 +211,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Tag prod and latest for master branch in EU
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.ref == 'refs/heads/master'
         timeout-minutes: 60
         continue-on-error: true

@@ -52,7 +52,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Build and tag image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         timeout-minutes: 30
         with:
           context: ./
