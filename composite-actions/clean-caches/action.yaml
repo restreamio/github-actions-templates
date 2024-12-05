@@ -21,6 +21,9 @@ inputs:
     description: Sorting direction (asc or desc).
     required: false
     default: desc
+  github_token:
+    description: The GitHub token for API requests.
+    required: true
 
 runs:
   using: "composite"
@@ -40,7 +43,7 @@ runs:
       
           default_headers = {
               "Accept": "application/vnd.github+json",
-              "Authorization": "Bearer ${{ secrets.GITHUB_TOKEN }}",
+              "Authorization": "Bearer ${{ inputs.github_token }}",
               "X-GitHub-Api-Version": "2022-11-28"
           }
           headers = {**default_headers, **headers}
