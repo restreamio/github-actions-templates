@@ -182,7 +182,7 @@ jobs:
           aws s3 rm s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }} --recursive
 
       - name: Clean Actions caches
-        uses: restreamio/github-actions-templates/composite-actions/clean-caches@v1
+        uses: restreamio/github-actions-templates/composite-actions/clean-caches@feat/rsl/clean-caches-to-composite-action
         with:
           ref: "refs/pull/${{ github.event.pull_request.number }}/merge"
           per_page: 50
