@@ -189,3 +189,4 @@ jobs:
           page: 1
           sort: "last_accessed_at"
           direction: "desc"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
