@@ -73,6 +73,10 @@ on:
         type: boolean
         default: false
         required: false
+      nx_force_local_cache:
+        description: "Value for NX_REJECT_UNKNOWN_LOCAL_CACHE variable"
+        required: false
+        default: "0"
       concurrency_name:
         type: string
         default: "build-n-deploy-to-s3-qa"
@@ -95,6 +99,8 @@ jobs:
   build:
     name: Build and deploy to S3
     runs-on: ${{ inputs.instance_type }}
+    env:
+      NX_REJECT_UNKNOWN_LOCAL_CACHE: ${{ inputs.nx_force_local_cache }}
     if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true)
     steps:
       - name: Show context
