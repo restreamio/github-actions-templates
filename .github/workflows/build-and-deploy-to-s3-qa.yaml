@@ -99,8 +99,6 @@ jobs:
   build:
     name: Build and deploy to S3
     runs-on: ${{ inputs.instance_type }}
-    env:
-      NX_REJECT_UNKNOWN_LOCAL_CACHE: ${{ inputs.nx_force_local_cache }}
     if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true)
     steps:
       - name: Show context
@@ -164,6 +162,7 @@ jobs:
         env:
           COMMIT_HASH: ${{ github.sha }}
           NODE_OPTIONS: ${{ inputs.node_options }}
+          NX_REJECT_UNKNOWN_LOCAL_CACHE: ${{ inputs.nx_force_local_cache }}
 
       - name: Deploy to S3
         timeout-minutes: 15
