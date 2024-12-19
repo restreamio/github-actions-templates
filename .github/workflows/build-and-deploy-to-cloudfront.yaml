@@ -109,7 +109,7 @@ jobs:
     name: Build and deploy to CloudFront
     runs-on: ${{ inputs.instance_type }}
     env:
-      NX_REJECT_UNKNOWN_LOCAL_CACHE: ${{ inputs.nx_reject_unknown_local_cache }}
+      NX_REJECT_UNKNOWN_LOCAL_CACHE: ${{ inputs.nx_force_local_cache }}
     steps:
       - name: Show context
         env:
