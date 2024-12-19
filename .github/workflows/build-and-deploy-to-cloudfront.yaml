@@ -88,6 +88,11 @@ on:
         type: boolean
         default: false
         required: false
+      # https://nx.dev/troubleshooting/unknown-local-cache
+      nx_force_local_cache:
+        description: "Value for NX_REJECT_UNKNOWN_LOCAL_CACHE variable"
+        required: false
+        default: "0"
       concurrency_name:
         type: string
         default: "build-n-deploy-to-cf"
