@@ -74,6 +74,7 @@ on:
         default: false
         required: false
       nx_force_local_cache:
+        type: string
         description: "Value for NX_REJECT_UNKNOWN_LOCAL_CACHE variable"
         required: false
         default: "0"

@@ -90,6 +90,7 @@ on:
         required: false
       # https://nx.dev/troubleshooting/unknown-local-cache
       nx_force_local_cache:
+        type: string
         description: "Value for NX_REJECT_UNKNOWN_LOCAL_CACHE variable"
         required: false
         default: "0"
