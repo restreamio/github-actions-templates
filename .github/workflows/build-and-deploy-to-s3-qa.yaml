@@ -82,12 +82,23 @@ on:
         type: string
         default: "build-n-deploy-to-s3-qa"
         required: false
+      node_modules_cache_key:
+        type: string
+        required: false
+      skip_auto_comment:
+        type: boolean
+        default: false
+        required: false
+      force_build_job:
+        type: boolean
+        default: true
+        required: false
 
 jobs:
   print-url:
     name: Print the url of QA build
     runs-on: ubuntu-latest
-    if: github.event.action == 'opened'
+    if: github.event.action == 'opened' && !inputs.skip_auto_comment
     timeout-minutes: 1
     steps:
       - name: Leave comment with domain name
@@ -100,7 +111,7 @@ jobs:
   build:
     name: Build and deploy to S3
     runs-on: ${{ inputs.instance_type }}
-    if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true)
+    if: ((github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true) || inputs.force_build_job)
     steps:
       - name: Show context
         env:
@@ -132,7 +143,17 @@ jobs:
           node-version-file: .nvmrc
           cache: ${{ inputs.package_manager }}
 
+      - name: Cache node modules
+        if: inputs.node_modules_cache_key
+        id: node-modules-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ inputs.node_modules_cache_key }}-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 15
 
