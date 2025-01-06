@@ -132,6 +132,10 @@ jobs:
           node-version-file: .nvmrc
           cache: ${{ inputs.package_manager }}
 
+      - name: Install dependencies
+        run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
+        timeout-minutes: 15
+
       - name: Cache build
         if: inputs.build_cache_path
         timeout-minutes: 5
@@ -144,10 +148,6 @@ jobs:
           restore-keys: |
             build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-
             build-cache-${{ runner.arch }}-
-
-      - name: Install dependencies
-        run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
-        timeout-minutes: 15
 
       - uses: nrwl/nx-set-shas@v4
         with:
