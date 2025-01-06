@@ -163,7 +163,7 @@ jobs:
 
       - name: Install dependencies
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
-        timeout-minutes: 10
+        timeout-minutes: 15
 
       - uses: nrwl/nx-set-shas@v3
         with:
