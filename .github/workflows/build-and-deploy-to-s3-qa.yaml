@@ -89,6 +89,10 @@ on:
         type: boolean
         default: false
         required: false
+      force_build_job:
+        type: boolean
+        default: true
+        required: false
 
 jobs:
   print-url:
@@ -107,7 +111,7 @@ jobs:
   build:
     name: Build and deploy to S3
     runs-on: ${{ inputs.instance_type }}
-    if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true)
+    if: ((github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true) || inputs.force_build_job)
     steps:
       - name: Show context
         env:
