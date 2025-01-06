@@ -85,12 +85,16 @@ on:
       node_modules_cache_key:
         type: string
         required: false
+      skip_auto_comment:
+        type: boolean
+        default: false
+        required: false
 
 jobs:
   print-url:
     name: Print the url of QA build
     runs-on: ubuntu-latest
-    if: github.event.action == 'opened'
+    if: github.event.action == 'opened' && !inputs.skip_auto_comment
     timeout-minutes: 1
     steps:
       - name: Leave comment with domain name
