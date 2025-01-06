@@ -166,7 +166,7 @@ jobs:
             build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-
             build-cache-${{ runner.arch }}-
 
-      - uses: nrwl/nx-set-shas@v3
+      - uses: nrwl/nx-set-shas@v4
         with:
           main-branch-name: "master"
         if: inputs.with_nx
