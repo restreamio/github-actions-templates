@@ -169,7 +169,7 @@ jobs:
         timeout-minutes: 15
         run: |
           cd ${{ inputs.build_path }}
-          aws s3 cp . "s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }}" --delete --no-progress --exclude "*.js.map"
+          aws s3 sync . "s3://${{ inputs.s3_bucket_name }}/${{ github.event.pull_request.number }}" --delete --no-progress --exclude "*.js.map"
 
   cleanup:
     name: Cleanup Actions Caches
