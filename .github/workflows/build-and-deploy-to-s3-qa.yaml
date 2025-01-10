@@ -58,7 +58,7 @@ on:
       custom_domain_name:
         type: string
         required: false
-        default: ${{ github.event.pull_request.number }}
+        default: ${{ github.event.repository.name }}
       # ======
       # NX monorepo tools
       # ======
