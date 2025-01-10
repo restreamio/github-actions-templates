@@ -36,17 +36,6 @@ on:
         default: yarn
         required: false
       # =====
-      # Github Context variables
-      # =====
-      repo_name:
-        type: string
-        required: false
-        default: ${{ github.event.repository.name }}
-      pr_number:
-        type: string
-        required: false
-        default: ${{ github.event.pull_request.number }}
-      # =====
       # Build
       # =====
       build_command:
@@ -66,6 +55,10 @@ on:
       s3_bucket_name:
         type: string
         required: true
+      custom_domain_name:
+        type: string
+        required: false
+        default: ${{ github.event.pull_request.number }}
       # ======
       # NX monorepo tools
       # ======
@@ -96,7 +89,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           message: |
-            QA Build will be available here: [https://${{ inputs.repo_name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io](https://${{ inputs.repo_name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io)
+            QA Build will be available here: [https://${{ inputs.custom_domain_name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io](https://${{ inputs.custom_domain_name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io)
   build:
     name: Build and deploy to S3
     runs-on: ${{ inputs.instance_type }}
