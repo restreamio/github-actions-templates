@@ -98,6 +98,10 @@ on:
         type: string
         default: "build-n-deploy-to-cf"
         required: false
+      cache_node_modules:
+        type: boolean
+        default: false
+        required: false
 
     secrets:
       sentry_auth_token:
@@ -148,20 +152,47 @@ jobs:
           echo Package version: "$(npm pkg get version --workspaces=false | sed 's/"//g')"
           echo "package_version=$(npm pkg get version --workspaces=false | sed 's/"//g')" >> $GITHUB_OUTPUT
 
+      # cache defined by build_cache_path input
       - name: Cache build
+        id: build-cache
         if: inputs.build_cache_path
         timeout-minutes: 5
         uses: actions/cache@v4
         with:
           path: |
             ${{ inputs.build_cache_path }}
-            ${{ inputs.build_cache_path == '.nx/cache' && '.nx/cache' || '' }}
-          key: build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-${{ inputs.build_cache_path == '.nx/cache' && hashFiles('nx.json') || '' }}
+          key: build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
           restore-keys: |
-            build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-
+            build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
             build-cache-${{ runner.arch }}-
 
+      # common NX cache shared across refs. NX mechanism will decide how cache should be built within project
+      - name: Cache NX
+        id: nx-cache
+        if: inputs.with_nx
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: '.nx/cache'
+          key: nx-cache-${{ runner.arch }}
+          restore-keys: |
+            nx-cache-${{ runner.arch }}
+
+      # dedicated cache for node_modules, enabled by cache_node_modules input
+      - name: Cache node_modules
+        id: node-modules-cache
+        if: inputs.cache_node_modules
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: './node_modules'
+          key: node-modules-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+            node-modules-cache-${{ runner.arch }}
+
       - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 15
 
