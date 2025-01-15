@@ -99,7 +99,7 @@ on:
         default: "build-n-deploy-to-cf"
         required: false
       cache_node_modules:
-        type: string
+        type: boolean
         default: false
         required: false
 

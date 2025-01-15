@@ -77,7 +77,7 @@ on:
         default: "build-n-deploy-to-s3-qa"
         required: false
       cache_node_modules:
-        type: string
+        type: boolean
         default: false
         required: false
       skip_auto_comment:
