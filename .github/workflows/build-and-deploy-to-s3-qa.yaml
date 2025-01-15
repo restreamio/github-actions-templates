@@ -66,7 +66,6 @@ on:
         type: boolean
         default: false
         required: false
-      # https://nx.dev/troubleshooting/unknown-local-cache
       nx_force_local_cache:
         type: string
         description: "Value for NX_REJECT_UNKNOWN_LOCAL_CACHE variable"
@@ -76,24 +75,12 @@ on:
         type: string
         default: "build-n-deploy-to-s3-qa"
         required: false
-      cache_node_modules:
-        type: boolean
-        default: false
-        required: false
-      skip_auto_comment:
-        type: boolean
-        default: false
-        required: false
-      force_build_job:
-        type: boolean
-        default: false
-        required: false
 
 jobs:
   print-url:
     name: Print the url of QA build
     runs-on: ubuntu-latest
-    if: github.event.action == 'opened' && !inputs.skip_auto_comment
+    if: github.event.action == 'opened'
     timeout-minutes: 1
     steps:
       - name: Leave comment with domain name
@@ -103,15 +90,14 @@ jobs:
         with:
           message: |
             QA Build will be available here: [https://${{ inputs.custom_domain_name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io](https://${{ inputs.custom_domain_name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io)
-
   build:
     name: Build and deploy to S3
     runs-on: ${{ inputs.instance_type }}
-    if: ((github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true) || inputs.force_build_job)
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.merged != true)
     steps:
       - name: Show context
         env:
-          # to make debugging easier in case of issues
+          # To make debugging easier in case of issues
           GITHUB_CONTEXT_JSON: ${{ toJson(github) }}
           INPUTS_JSON: ${{ toJson(inputs) }}
         run: |
@@ -139,47 +125,20 @@ jobs:
           node-version-file: .nvmrc
           cache: ${{ inputs.package_manager }}
 
-      # cache defined by build_cache_path input
       - name: Cache build
-        id: build-cache
         if: inputs.build_cache_path
         timeout-minutes: 5
         uses: actions/cache@v4
         with:
           path: |
             ${{ inputs.build_cache_path }}
-          key: build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+            ${{ inputs.build_cache_path == '.nx/cache' && '.nx/cache' || '' }}
+          key: build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-${{ inputs.build_cache_path == '.nx/cache' && hashFiles('nx.json') || '' }}
           restore-keys: |
-            build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
+            build-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}-
             build-cache-${{ runner.arch }}-
 
-      # common NX cache shared across refs. NX mechanism will decide how cache should be built within project
-      - name: Cache NX
-        id: nx-cache
-        if: inputs.with_nx
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: '.nx/cache'
-          key: nx-cache-${{ runner.arch }}
-          restore-keys: |
-            nx-cache-${{ runner.arch }}
-
-      # dedicated cache for node_modules, enabled by cache_node_modules input
-      - name: Cache node_modules
-        id: node-modules-cache
-        if: inputs.cache_node_modules
-        timeout-minutes: 5
-        uses: actions/cache@v4
-        with:
-          path: './node_modules'
-          key: node-modules-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
-          restore-keys: |
-            node-modules-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
-            node-modules-cache-${{ runner.arch }}
-
       - name: Install dependencies
-        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: ${{ (inputs.package_manager == 'yarn') && 'npm install -g yarn && yarn install --frozen-lockfile' || 'npm ci' }}
         timeout-minutes: 15
 
