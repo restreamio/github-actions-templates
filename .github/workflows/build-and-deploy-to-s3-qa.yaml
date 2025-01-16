@@ -55,10 +55,14 @@ on:
       s3_bucket_name:
         type: string
         required: true
-      custom_domain_name:
+      domain_prefix:
         type: string
         required: false
         default: ${{ github.event.repository.name }}
+      domain_suffix:
+        type: string
+        required: false
+        default: "qa.restream.io"
       # ======
       # NX monorepo tools
       # ======
@@ -102,7 +106,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           message: |
-            QA Build will be available here: [https://${{ inputs.custom_domain_name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io](https://${{ inputs.custom_domain_name }}-pr-${{ github.event.pull_request.number }}.qa.restream.io)
+            QA Build will be available here: [https://${{ inputs.domain_prefix }}-pr-${{ github.event.pull_request.number }}.${{ inputs.domain_suffix }}](https://${{ inputs.domain_prefix }}-pr-${{ github.event.pull_request.number }}.${{ inputs.domain_suffix }})
 
   build:
     name: Build and deploy to S3
@@ -160,7 +164,7 @@ jobs:
         timeout-minutes: 5
         uses: actions/cache@v4
         with:
-          path: '.nx/cache'
+          path: ".nx/cache"
           key: nx-cache-${{ runner.arch }}
           restore-keys: |
             nx-cache-${{ runner.arch }}
@@ -172,7 +176,7 @@ jobs:
         timeout-minutes: 5
         uses: actions/cache@v4
         with:
-          path: './node_modules'
+          path: "./node_modules"
           key: node-modules-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
           restore-keys: |
             node-modules-cache-${{ runner.arch }}-${{ (inputs.package_manager == 'yarn') && hashFiles('yarn.lock') || hashFiles('package-lock.json') }}
