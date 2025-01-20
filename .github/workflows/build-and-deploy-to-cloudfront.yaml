@@ -238,7 +238,7 @@ jobs:
           DATADOG_API_KEY: ${{ secrets.datadog_api_key }}
 
       - name: Deploy to CloudFront
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
         timeout-minutes: 15
         run: |
           cd ${{ inputs.build_path }}
