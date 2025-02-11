@@ -68,7 +68,7 @@ jobs:
           cargo sonar --clippy --clippy-path clippy-report.json
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
           SONAR_TOKEN: ${{ secrets.sc_token }}
