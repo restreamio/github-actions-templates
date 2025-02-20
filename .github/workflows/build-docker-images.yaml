@@ -299,6 +299,7 @@ jobs:
         env:
           IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
         run: |-
+          ls -la
           cd ${{ inputs.pr_repos }}
           ${{ inputs.pr_command }}
 
