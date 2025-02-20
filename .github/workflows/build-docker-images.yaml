@@ -300,8 +300,8 @@ jobs:
         timeout-minutes: 1
         env:
           IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
+        working-directory: ${{ inputs.pr_repos }}
         run: |-
-          cd ${{ inputs.pr_repos }}
           ${{ inputs.pr_command }}
 
       - name: Create Pull Request
