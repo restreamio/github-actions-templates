@@ -285,7 +285,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
-          repositories: restreamio/${{ inputs.pr_repos }}
+          repositories: ${{ inputs.pr_repos }}
 
       - uses: actions/checkout@v4
         with:
