@@ -240,13 +240,28 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  pr:
+    name: Open pull request
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Leave comment with created image
+        if: github.ref == 'refs/heads/master'
+        uses: peter-evans/commit-comment@v3
+        timeout-minutes: 1
+        env:
+          IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
+        with:
+          body: |
+            Image has been built: `${{ env.IMAGE_TAG }}`
+
       - name: Set IMAGE_TAG based on git ref for status check summary
         id: set_image_tag
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "summary_image_tag=${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}" >> $GITHUB_OUTPUT
+            echo "summary_image_tag=${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
-            echo "summary_image_tag=prod-${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}" >> $GITHUB_OUTPUT
+            echo "summary_image_tag=prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Print image tag in status check summary
@@ -261,25 +276,11 @@ jobs:
           state: "success"
           sha: ${{github.event.pull_request.head.sha || github.sha}}
 
-      - name: Leave comment with created image
-        if: github.ref == 'refs/heads/master'
-        uses: peter-evans/commit-comment@v3
-        timeout-minutes: 1
-        env:
-          IMAGE_TAG: prod-${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}
-        with:
-          body: |
-            Image has been built: `${{ env.IMAGE_TAG }}`
-
-  pr:
-    name: Open pull request
-    needs: [build]
-    if: github.ref == 'refs/heads/master' && inputs.pr_open
-    runs-on: ubuntu-latest
-    steps:
       - name: Get GithubApp token
         uses: actions/create-github-app-token@v1
         id: github-app-token
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
+        timeout-minutes: 1
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
@@ -287,13 +288,15 @@ jobs:
 
       - name: Checkout PR repository
         uses: actions/checkout@v4
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
+        timeout-minutes: 1
         with:
           repository: restreamio/${{ inputs.pr_repos }}
           token: ${{ steps.github-app-token.outputs.token }}
           path: ${{ inputs.pr_repos }}
-        timeout-minutes: 1
 
       - name: Create git commits
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
@@ -303,6 +306,7 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7.0.6
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
