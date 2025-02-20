@@ -50,7 +50,7 @@ on:
         required: false
     secrets:
       gh_token:
-        required: true
+        required: false
 
 concurrency:
   group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
