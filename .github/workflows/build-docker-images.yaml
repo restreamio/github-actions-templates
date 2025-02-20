@@ -292,6 +292,8 @@ jobs:
         with:
           repository: restreamio/${{ inputs.pr_repos }}
           token: ${{ steps.github-app-token.outputs.token }}
+          path: ${{ inputs.pr_repos }}
+        timeout-minutes: 1
 
       - name: Create git commits
         # if: github.ref == 'refs/heads/master' && inputs.pr_open
