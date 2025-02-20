@@ -48,9 +48,6 @@ on:
         type: string
         default: "build"
         required: false
-    secrets:
-      gh_token:
-        required: true
 
 concurrency:
   group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
@@ -61,7 +58,6 @@ permissions:
   checks: write # create checks
   contents: write # list refs, create refs
   id-token: write # fetch OIDC token from AWS IAM
-  pull-requests: write # create PRs in k8s repo
   statuses: write # update commit statuses in parent workflow, CI bot updates
 
 jobs:
@@ -279,15 +275,32 @@ jobs:
           state: "success"
           sha: ${{github.event.pull_request.head.sha || github.sha}}
 
+      - name: Get GithubApp token
+        uses: actions/create-github-app-token@v1
+        id: github-app-token
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
+        timeout-minutes: 1
+        with:
+          app-id: ${{ vars.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          repositories: ${{ inputs.pr_repos }}
+
+      - name: Checkout PR repository
+        uses: actions/checkout@v4
+        if: github.ref == 'refs/heads/master' && inputs.pr_open
+        timeout-minutes: 1
+        with:
+          repository: restreamio/${{ inputs.pr_repos }}
+          token: ${{ steps.github-app-token.outputs.token }}
+          path: ${{ inputs.pr_repos }}
+
       - name: Create git commits
         if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
-          GIT_TOKEN: ${{ secrets.gh_token }}
+        working-directory: ${{ inputs.pr_repos }}
         run: |-
-          git clone "https://$GIT_TOKEN@github.com/restreamio/${{ inputs.pr_repos }}.git"
-          cd ${{ inputs.pr_repos }}
           ${{ inputs.pr_command }}
 
       - name: Create Pull Request
@@ -307,7 +320,7 @@ jobs:
             message: ${{ github.event.head_commit.message }}
           commit-message: "bump: ${{ github.event.repository.name }} to ${{ env.IMAGE_TAG }}"
           committer: GitHub <noreply@github.com>
-          author: restream-ci-bot <restream-ci-bot@users.noreply.github.com>
+          author: ${{ steps.github-app-token.outputs.app-slug }}[bot] <${{ steps.get-user-id.outputs.user-id }}+${{ steps.github-app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
           delete-branch: true
           path: ${{ inputs.pr_repos }}
-          token: ${{ secrets.gh_token }}
+          token: ${{ steps.github-app-token.outputs.token }}
