@@ -54,11 +54,9 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: write # mark parent workflow as failed, delete caches
   checks: write # create checks
   contents: write # list refs, create refs
   id-token: write # fetch OIDC token from AWS IAM
-  pull-requests: write # create PRs in k8s repo
   statuses: write # update commit statuses in parent workflow, CI bot updates
 
 jobs:
