@@ -279,14 +279,25 @@ jobs:
           state: "success"
           sha: ${{github.event.pull_request.head.sha || github.sha}}
 
+      - name: Get GithubApp token
+        uses: actions/create-github-app-token@v1
+        id: github-app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          repositories: restreamio/${{ inputs.pr_repos }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: restreamio/${{ inputs.pr_repos }}
+          token: ${{ steps.github-app-token.outputs.token }}
+
       - name: Create git commits
         if: github.ref == 'refs/heads/master' && inputs.pr_open
         timeout-minutes: 1
         env:
           IMAGE_TAG: prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}
-          GIT_TOKEN: ${{ secrets.gh_token }}
         run: |-
-          git clone "https://$GIT_TOKEN@github.com/restreamio/${{ inputs.pr_repos }}.git"
           cd ${{ inputs.pr_repos }}
           ${{ inputs.pr_command }}
 
@@ -310,4 +321,4 @@ jobs:
           author: restream-ci-bot <restream-ci-bot@users.noreply.github.com>
           delete-branch: true
           path: ${{ inputs.pr_repos }}
-          token: ${{ secrets.gh_token }}
+          token: ${{ steps.github-app-token.outputs.token }}
