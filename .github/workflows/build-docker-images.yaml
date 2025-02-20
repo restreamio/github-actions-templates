@@ -244,15 +244,6 @@ jobs:
         id: set_image_tag
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "summary_image_tag=${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
-            echo "summary_image_tag=prod-${{ needs.build.outputs.date }}-${{ needs.build.outputs.sha_short }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Set IMAGE_TAG based on git ref for status check summary
-        id: set_image_tag
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "summary_image_tag=${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
             echo "summary_image_tag=prod-${{ steps.github-commit-details.outputs.date }}-${{ steps.github-commit-details.outputs.sha_short }}" >> $GITHUB_OUTPUT
