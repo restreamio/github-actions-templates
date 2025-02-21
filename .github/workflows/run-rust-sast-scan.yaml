@@ -19,11 +19,6 @@ on:
         type: string
         default: "rust-scan"
         required: false
-    secrets:
-      gh_token:
-        required: true
-      sc_token:
-        required: true
 
 concurrency:
   group: ${{ github.event.repository.name }}-${{ inputs.concurrency_name }}-${{ github.event.pull_request.number }}
@@ -40,7 +35,9 @@ jobs:
     name: SonarCloud SAST with Clippy
     runs-on: ${{ inputs.runner_size }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        timeout-minutes: 1
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
@@ -70,8 +67,7 @@ jobs:
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.gh_token }}
-          SONAR_TOKEN: ${{ secrets.sc_token }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
             -Dsonar.externalIssuesReportPaths=sonar-issues.json
